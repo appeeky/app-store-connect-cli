@@ -4,7 +4,8 @@
  *
  *   POST /mcp              remote MCP (streamable HTTP, stateless)
  *   GET  /v1/apps          apps the connected key can see
- *   GET  /v1/ops           operations this caller can run
+ *   GET  /v1/ops           operations this caller can run (?q= search, ?group=, ?method=, ?kind=, ?limit=)
+ *   GET  /v1/ops/:name     parameters and request body of one operation
  *   POST /v1/ops/:name     run one operation, JSON args in the body
  *   GET  /health
  *
@@ -19,12 +20,16 @@ import {
   AppStoreConnectClient,
   ReadOnlyError,
   ValidationError,
+  describeOperation,
   opIsWrite,
+  searchOperations,
+  validateOpArgs,
+  type AscOp,
   type JsonApiDocument,
   type Resource,
 } from "@appeeky/app-store-connect-core";
 import { registerTools, type ClientSource } from "@appeeky/app-store-connect-mcp";
-import { hostedOps } from "./hosted-ops.js";
+import { findHostedOp, hostedCallableOps, hostedOps, hostedRefusal, writesDisabledMessage } from "./hosted-ops.js";
 import { fetchAscSession, SessionError, type AscSession, type SessionConfig } from "./session.js";
 
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -32,6 +37,7 @@ const WRITE_HEADER = "x-asc-allow-writes";
 
 const INSTRUCTIONS = `App Store Connect through the user's Appeeky connection.
 Call appstore_list_apps first to find app ids.
+Every endpoint of the App Store Connect API is reachable: find it with appstore_search_operations, read its parameters and body with appstore_describe_operation, run it with appstore_call_operation.
 Write operations (versions, submissions, TestFlight, review responses, prices, users…) are hidden unless the client sends the header X-ASC-Allow-Writes: true; appstore_request only allows GET without it.
 Uploading screenshots or previews and downloading profiles needs local files, so use the appstore CLI for those.`;
 
@@ -121,7 +127,13 @@ function buildMcpServer(apiKey: string, allowWrites: boolean, config: AppConfig)
     { instructions: INSTRUCTIONS },
   );
   const { source } = sessionSource(apiKey, !allowWrites, config);
-  registerTools(server, source, { ops: hostedOps(allowWrites), accountArg: false });
+  registerTools(server, source, {
+    ops: hostedOps(allowWrites),
+    callableOps: hostedCallableOps(allowWrites),
+    explainUnavailable: (name) => hostedRefusal(name, allowWrites).message,
+    writeRefusal: (op) => writesDisabledMessage(op.name),
+    accountArg: false,
+  });
   return server;
 }
 
@@ -164,11 +176,32 @@ async function handleRest(
   config: AppConfig,
 ) {
   const allowWrites = allowsWrites(req);
-  const ops = hostedOps(allowWrites);
+  const url = new URL(req.url ?? "/", "http://localhost");
 
   if (path === "/v1/ops" && req.method === "GET") {
+    const callable = hostedCallableOps(allowWrites);
+    const q = url.searchParams.get("q") ?? "";
+    const group = url.searchParams.get("group") ?? undefined;
+    const method = url.searchParams.get("method") ?? undefined;
+    const kindParam = url.searchParams.get("kind");
+    const kind = kindParam === "api" || kindParam === "curated" ? kindParam : undefined;
+    if (q || group || method || kind) {
+      const limitParam = Number(url.searchParams.get("limit") ?? (q ? 50 : 0));
+      const all = searchOperations(q, { ops: callable, group, method, kind });
+      const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, 2000) : all.length;
+      sendJson(res, 200, { data: all.slice(0, limit), total: all.length });
+      return;
+    }
     sendJson(res, 200, {
-      data: ops.map((op) => ({ name: op.name, group: op.group, summary: op.summary, write: op.write })),
+      data: callable.map((op) => ({
+        name: op.name,
+        kind: op.api ? "api" : "curated",
+        group: op.group,
+        summary: op.summary,
+        write: op.write,
+        ...(op.api ? { method: op.api.method, path: op.api.path } : {}),
+      })),
+      total: callable.length,
     });
     return;
   }
@@ -184,22 +217,19 @@ async function handleRest(
   }
 
   const match = path.match(/^\/v1\/ops\/([a-z0-9_]+)$/);
-  if (!match || req.method !== "POST") {
+  if (!match || (req.method !== "POST" && req.method !== "GET")) {
     sendError(res, 404, "NOT_FOUND", "Not found.");
     return;
   }
-  const name = match[1];
-  const op = ops.find((o) => o.name === name);
+  const name = match[1]!;
+  const op: AscOp | undefined = findHostedOp(name, allowWrites);
   if (!op) {
-    const hiddenWrite = !allowWrites && hostedOps(true).some((o) => o.name === name);
-    sendError(
-      res,
-      hiddenWrite ? 403 : 404,
-      hiddenWrite ? "WRITES_DISABLED" : "UNKNOWN_OPERATION",
-      hiddenWrite
-        ? `${name} changes your App Store Connect account. Send X-ASC-Allow-Writes: true to run it.`
-        : `Unknown or CLI-only operation: ${name}`,
-    );
+    const refusal = hostedRefusal(name, allowWrites);
+    sendError(res, refusal.status, refusal.code, refusal.message);
+    return;
+  }
+  if (req.method === "GET") {
+    sendJson(res, 200, { data: describeOperation(name, { ops: [op] }) });
     return;
   }
 
@@ -207,7 +237,8 @@ async function handleRest(
   if (typeof body !== "object" || Array.isArray(body)) {
     throw new HttpError(400, "INVALID_ARGS", "Body must be a JSON object of operation arguments.");
   }
-  const parsed = z.object(op.shape).safeParse(body);
+  // Unknown keys are kept: generated ops reject them with a precise message.
+  const parsed = z.object(op.shape).passthrough().safeParse(body);
   if (!parsed.success) {
     sendJson(res, 400, {
       error: { code: "INVALID_ARGS", message: "Invalid arguments.", details: parsed.error.issues },
@@ -215,13 +246,10 @@ async function handleRest(
     return;
   }
   const args = parsed.data as Record<string, unknown>;
+  // Full check (required filters, unknown keys, body) before the metered session.
+  validateOpArgs(op, args);
   if (!allowWrites && opIsWrite(op, args)) {
-    sendError(
-      res,
-      403,
-      "WRITES_DISABLED",
-      `This ${op.name} call changes your App Store Connect account. Send X-ASC-Allow-Writes: true to run it.`,
-    );
+    sendError(res, 403, "WRITES_DISABLED", `This call: ${writesDisabledMessage(op.name)}`);
     return;
   }
   const { source } = sessionSource(apiKey, !allowWrites, config);

@@ -201,4 +201,156 @@ describe("hosted appstore server", () => {
     });
     expect(res.status).toBe(413);
   });
+
+  it("REST lists, searches and describes generated operations behind the write gate", async () => {
+    const { base, sessionFetch } = await start();
+    const headers = { authorization: "Bearer apk_user" };
+    const all = (await (await fetch(`${base}/v1/ops`, { headers })).json()) as {
+      data: Array<{ name: string; kind: string; write: boolean; method?: string }>;
+      total: number;
+    };
+    expect(all.data.some((o) => o.name === "appstore_api_apps_get_collection" && o.kind === "api" && o.method === "GET")).toBe(true);
+    expect(all.data.some((o) => o.name === "appstore_api_beta_groups_create_instance")).toBe(false);
+    expect(all.data.some((o) => o.name === "appstore_upload_screenshot")).toBe(false);
+    expect(all.data.every((o) => !o.write || o.name === "appstore_request")).toBe(true);
+    expect(all.total).toBeGreaterThan(800);
+
+    const writable = (await (
+      await fetch(`${base}/v1/ops`, { headers: { ...headers, "x-asc-allow-writes": "true" } })
+    ).json()) as { total: number; data: Array<{ name: string }> };
+    expect(writable.total).toBeGreaterThan(all.total);
+    expect(writable.data.some((o) => o.name === "appstore_api_beta_groups_create_instance")).toBe(true);
+
+    const search = (await (await fetch(`${base}/v1/ops?q=customer%20reviews&limit=5`, { headers })).json()) as {
+      data: Array<{ name: string; params: string[] }>;
+      total: number;
+    };
+    expect(search.data).toHaveLength(5);
+    expect(search.data.every((h) => Array.isArray(h.params))).toBe(true);
+    expect(search.data.some((h) => h.name.includes("customer_review"))).toBe(true);
+
+    const described = await fetch(`${base}/v1/ops/appstore_api_apps_get_instance`, { headers });
+    expect(described.status).toBe(200);
+    expect(((await described.json()) as { data: { path: string } }).data.path).toBe("/v1/apps/{id}");
+    const hiddenDescribe = await fetch(`${base}/v1/ops/appstore_api_beta_groups_create_instance`, { headers });
+    expect(hiddenDescribe.status).toBe(403);
+    expect(sessionFetch).not.toHaveBeenCalled();
+  });
+
+  it("REST runs a generated operation, keeps generated writes behind the header, and validates first", async () => {
+    const { base, sessionFetch, appleFetch } = await start();
+    const headers = { authorization: "Bearer apk_user", "content-type": "application/json" };
+    const ok = await fetch(`${base}/v1/ops/appstore_api_apps_get_collection`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ filter: { bundleId: "com.example.app" }, limit: 1 }),
+    });
+    expect(ok.status).toBe(200);
+    expect(String(appleFetch.mock.calls[0]![0])).toBe(
+      "https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=com.example.app&limit=1",
+    );
+
+    const blocked = await fetch(`${base}/v1/ops/appstore_api_beta_groups_delete_instance`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ id: "g1" }),
+    });
+    expect(blocked.status).toBe(403);
+    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe("WRITES_DISABLED");
+
+    const sessionsBefore = sessionFetch.mock.calls.length;
+    const invalid = await fetch(`${base}/v1/ops/appstore_api_apps_get_instance`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ id: "../users" }),
+    });
+    expect(invalid.status).toBe(400);
+    const unknownArg = await fetch(`${base}/v1/ops/appstore_api_apps_get_collection`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ "filter[nope]": "x" }),
+    });
+    expect(unknownArg.status).toBe(400);
+    expect(sessionFetch.mock.calls.length).toBe(sessionsBefore);
+
+    const write = await fetch(`${base}/v1/ops/appstore_api_beta_groups_delete_instance`, {
+      method: "POST",
+      headers: { ...headers, "x-asc-allow-writes": "true" },
+      body: JSON.stringify({ id: "g1" }),
+    });
+    expect(write.status).toBe(200);
+    const last = appleFetch.mock.calls.at(-1) as unknown as [string, RequestInit];
+    expect(last[0]).toBe("https://api.appstoreconnect.apple.com/v1/betaGroups/g1");
+    expect(last[1].method).toBe("DELETE");
+  });
+
+  it("hosted MCP exposes search/describe/call (not 1,300 tools) and gates call_operation", async () => {
+    const { base, sessionFetch, appleFetch } = await start();
+    const names = (await mcp(base, "tools/list", {})).result.tools.map((t) => t.name);
+    expect(names).toContain("appstore_search_operations");
+    expect(names).toContain("appstore_describe_operation");
+    expect(names).toContain("appstore_call_operation");
+    expect(names.some((n) => n.startsWith("appstore_api_"))).toBe(false);
+    expect(names.length).toBeLessThan(200);
+
+    const write = (
+      await mcp(base, "tools/call", {
+        name: "appstore_call_operation",
+        arguments: { name: "appstore_api_beta_groups_delete_instance", args: { id: "g1" } },
+      })
+    ).result;
+    expect(write.isError).toBe(true);
+    expect(write.content[0]!.text).toContain("X-ASC-Allow-Writes");
+
+    const curatedWrite = (
+      await mcp(base, "tools/call", {
+        name: "appstore_call_operation",
+        arguments: { name: "appstore_respond_to_review", args: { reviewId: "r", responseBody: "hi" } },
+      })
+    ).result;
+    expect(curatedWrite.content[0]!.text).toContain("X-ASC-Allow-Writes");
+
+    const cliOnly = (
+      await mcp(
+        base,
+        "tools/call",
+        { name: "appstore_call_operation", arguments: { name: "appstore_upload_screenshot", args: {} } },
+        { "x-asc-allow-writes": "true" },
+      )
+    ).result;
+    expect(cliOnly.isError).toBe(true);
+    expect(cliOnly.content[0]!.text).toContain("CLI-only");
+
+    const requestWrite = (
+      await mcp(base, "tools/call", {
+        name: "appstore_call_operation",
+        arguments: { name: "appstore_request", args: { method: "DELETE", path: "/v1/betaGroups/g1" } },
+      })
+    ).result;
+    expect(requestWrite.isError).toBe(true);
+    expect(sessionFetch).not.toHaveBeenCalled();
+    expect(appleFetch).not.toHaveBeenCalled();
+
+    const read = (
+      await mcp(base, "tools/call", {
+        name: "appstore_call_operation",
+        arguments: { name: "appstore_api_apps_get_collection", args: { limit: 1 } },
+      })
+    ).result;
+    expect(read.isError).toBeFalsy();
+    expect(JSON.parse(read.content[0]!.text).data[0].id).toBe("123");
+
+    const allowed = (
+      await mcp(
+        base,
+        "tools/call",
+        { name: "appstore_call_operation", arguments: { name: "appstore_api_beta_groups_delete_instance", args: { id: "g1" } } },
+        { "x-asc-allow-writes": "true" },
+      )
+    ).result;
+    expect(allowed.isError).toBeFalsy();
+    expect(String((appleFetch.mock.calls.at(-1) as unknown as [string])[0])).toBe(
+      "https://api.appstoreconnect.apple.com/v1/betaGroups/g1",
+    );
+  });
 });

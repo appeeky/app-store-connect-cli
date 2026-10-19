@@ -13,6 +13,7 @@ export interface McpServerOptions {
 
 export const MCP_INSTRUCTIONS = `App Store Connect through the user's own API key.
 Call appstore_list_apps first to find app ids (or appstore_find_app with a bundle id).
+Every App Store Connect API endpoint is reachable: find it with appstore_search_operations, read its parameters and body with appstore_describe_operation, run it with appstore_call_operation.
 Write operations change the user's App Store Connect account: ask before calling them.
 Uploads (screenshots, previews) and profile downloads read or write local files.`;
 
