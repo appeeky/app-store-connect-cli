@@ -49,7 +49,46 @@ export {
 } from "./jsonapi.js";
 export { maybeGunzip } from "./gzip.js";
 export { CAPABILITIES, searchCapabilities, type Capability } from "./capabilities.js";
-export { ASC_OPS, listOps, getOp, invokeOp, opIsWrite, type AscOp } from "./ops.js";
+export {
+  ASC_OPS,
+  ALL_OPS,
+  listOps,
+  getOp,
+  invokeOp,
+  validateOpArgs,
+  opIsWrite,
+  type AscOp,
+  type ApiOpInfo,
+} from "./ops.js";
+export {
+  API_OPS,
+  API_OP_PREFIX,
+  API_SPEC_VERSION,
+  API_ALL_DEFAULT_MAX_ITEMS,
+  API_ALL_MAX_ITEMS,
+  API_ALL_MAX_PAGES,
+  apiOpName,
+  apiParams,
+  apiBody,
+  apiPaginates,
+  encodePathParam,
+  validateApiArgs,
+  fillPath,
+  type ApiParam,
+  type ApiBodySummary,
+  type ApiBodyAttribute,
+  type ApiBodyRelationship,
+} from "./api-ops.js";
+export {
+  searchOperations,
+  describeOperation,
+  toSearchResult,
+  type OperationKind,
+  type OperationSearchResult,
+  type OperationDescription,
+  type OperationParam,
+  type SearchOptions,
+} from "./discovery.js";
 export {
   loadConfig,
   saveConfig,

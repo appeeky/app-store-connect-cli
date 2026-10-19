@@ -16,6 +16,22 @@ export interface AscOp {
   isWrite?: (args: Record<string, unknown>) => boolean;
   shape: ZodRawShape;
   run: (client: AppStoreConnectClient, args: Record<string, unknown>) => Promise<unknown>;
+  /**
+   * Set on operations generated from Apple's OpenAPI spec (API_OPS): the
+   * HTTP method, path template and spec metadata. Curated ops leave it unset.
+   */
+  api?: ApiOpInfo;
+}
+
+/** Spec metadata of a generated operation. */
+export interface ApiOpInfo {
+  operationId: string;
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** Path template, e.g. /v1/apps/{id}/appStoreVersions */
+  path: string;
+  deprecated: boolean;
+  /** Row index in the generated operation table. */
+  index: number;
 }
 
 /** Does this call change anything? */
