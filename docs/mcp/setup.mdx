@@ -1,0 +1,84 @@
+---
+title: MCP setup
+description: Connect appstore-mcp to Cursor, Codex, or any MCP client.
+---
+
+## Install
+
+```bash
+npm install -g @appeeky/app-store-connect-cli
+```
+
+This puts `appstore-mcp` on your `PATH`.
+
+## Using a saved account
+
+After `appstore accounts add …`:
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "appstore-mcp"
+    }
+  }
+}
+```
+
+## Using environment variables
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "appstore-mcp",
+      "env": {
+        "ASC_KEY_ID": "ABC123DEFG",
+        "ASC_ISSUER_ID": "00000000-0000-0000-0000-000000000000",
+        "ASC_PRIVATE_KEY_PATH": "/Users/you/.appstoreconnect/AuthKey_ABC123DEFG.p8",
+        "ASC_VENDOR_NUMBER": "85012345"
+      }
+    }
+  }
+}
+```
+
+## Read-only agent
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "appstore-mcp",
+      "args": ["--read-only"]
+    }
+  }
+}
+```
+
+## Several accounts
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "appstore-mcp",
+      "args": ["--account", "studio"]
+    }
+  }
+}
+```
+
+Tools also take an optional `account` argument. See [Multi-account and apps](/authentication-accounts).
+
+## Flags
+
+| Flag | |
+|------|-|
+| `--key-id`, `--issuer-id`, `--private-key` | Key parts, as in the CLI |
+| `-a, --account <id>` | Default account |
+| `--read-only` | Refuse every non-GET request |
+
+## Verify
+
+List tools in your client. You should see `appstore_whoami`, `appstore_list_apps`, `appstore_list_builds`, … plus `appstore_search_capabilities`. Ask the agent to run `appstore_whoami`.

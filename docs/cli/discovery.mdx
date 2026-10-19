@@ -1,0 +1,40 @@
+---
+title: Discovery
+description: whoami, search, capabilities, ops, and the raw api command.
+---
+
+## whoami
+
+```bash
+appstore whoami
+appstore --json whoami
+```
+
+Shows the key id, issuer id, key type (team or individual), the account it came from, and whether read-only is on. It does not call Apple.
+
+## search / capabilities
+
+```bash
+appstore search phased
+appstore capabilities --json
+```
+
+## ops
+
+```bash
+appstore ops list
+appstore ops list subscriptions
+appstore ops describe appstore_create_version
+```
+
+## api
+
+For anything without a dedicated operation:
+
+```bash
+appstore api GET /v1/apps/1234567890/appClips
+appstore api GET /v1/apps --query "filter[bundleId]=com.example.app" --query limit=1
+appstore api PATCH /v1/apps/1234567890 --body '{"data":{"type":"apps","id":"1234567890","attributes":{"contentRightsDeclaration":"DOES_NOT_USE_THIRD_PARTY_CONTENT"}}}' --confirm
+```
+
+Paths must start with a version (`/v1`, `/v2`, …). Non-GET calls need `--confirm` and are refused in read-only mode.

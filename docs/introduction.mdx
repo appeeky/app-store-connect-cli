@@ -1,0 +1,62 @@
+---
+title: Introduction
+description: CLI, MCP, and TypeScript SDK for the App Store Connect API.
+---
+
+# App Store Connect CLI
+
+Run App Store Connect from the terminal, CI, and AI agents with the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi).
+
+**Powered by [Appeeky](https://appeeky.com).** Open source under the [MIT License](https://github.com/appeeky/app-store-connect-cli/blob/main/LICENSE).
+
+One authenticated client, three ways in:
+
+- **`appstore`** / **`appstore-mcp`**: install with `npm install -g @appeeky/app-store-connect-cli`
+- **Hosted MCP and REST** at `https://asc-api.appeeky.com`, on the App Store Connect connection you set up in Appeeky (no key file on your machine)
+- **TypeScript SDK**: `@appeeky/app-store-connect-core` in this monorepo (bundled into the CLI; see [SDK](/sdk/overview))
+
+## Capabilities
+
+- Apps, app info localizations, categories, age rating, availability and territories
+- App Store versions and their localizations (description, keywords, what's new, promotional text, URLs)
+- App Review details, review submissions, one-step `appstore submit`, phased release and manual release
+- Builds, processing state, export compliance, What to Test notes
+- TestFlight groups, testers, beta app info and Beta App Review
+- Customer reviews, developer responses and a review summary
+- Screenshots and app previews: list, reorder, delete, and upload from local files
+- In-app purchases, subscription groups, subscriptions, localizations and price points
+- Team members and invitations
+- Bundle IDs, devices, certificates and provisioning profiles
+- Sales and Trends, finance and analytics reports as JSON rows
+- `appstore api` / `appstore_request` for any other endpoint
+
+## Components
+
+| Package | Entry point | Description |
+|---------|-------------|-------------|
+| `@appeeky/app-store-connect-cli` | `appstore`, `appstore-mcp` | Published npm package |
+
+The CLI, the MCP server and the hosted API share one operation registry (168 operations), so tool names and arguments match everywhere.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install, add an API key, and run your first command.
+  </Card>
+  <Card title="MCP setup" icon="robot" href="/mcp/setup">
+    Connect `appstore-mcp` to your agent.
+  </Card>
+  <Card title="Submit for review" icon="paper-plane" href="/guides/submit-for-review">
+    From a processed build to App Review in a few commands.
+  </Card>
+  <Card title="Hosted MCP" icon="cloud" href="/mcp/hosted">
+    Use your Appeeky connection, no .p8 file needed.
+  </Card>
+  <Card title="Agent skills" icon="sparkles" href="/skills/overview">
+    Workflow skills for coding agents.
+  </Card>
+  <Card title="Operations reference" icon="list" href="/reference/operations">
+    Every operation with its arguments.
+  </Card>
+</CardGroup>

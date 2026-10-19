@@ -1,0 +1,81 @@
+---
+title: Hosted MCP and API
+description: Use App Store Connect tools without a key file, on the connection you set up in Appeeky.
+---
+
+The hosted server runs the same operations as `appstore-mcp`, but your `.p8` key stays in Appeeky. Each call uses a short-lived App Store Connect token that Appeeky signs for that call.
+
+## Before you start
+
+1. Connect App Store Connect in [appeeky.com](https://appeeky.com) Settings.
+2. Copy your Appeeky API key from the same page.
+
+Each tool call or operation counts against your Appeeky API credits.
+
+## MCP
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "url": "https://asc-api.appeeky.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_APPEEKY_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Start with `appstore_list_apps` to see the apps your key can use.
+
+## Read-only by default
+
+Operations that change App Store Connect (versions, submissions, TestFlight, review responses, prices, users, signing) are hidden until you add this header:
+
+```json
+"X-ASC-Allow-Writes": "true"
+```
+
+`appstore_request` stays available without it, for `GET` only.
+
+Uploading screenshots or previews and downloading profiles needs local files, so those stay in the [CLI](/cli/overview). Local account management is not offered either; the account is the one connected in Appeeky.
+
+## REST
+
+| Method | Path | |
+| ------ | ---- | - |
+| `GET` | `/v1/apps` | Apps the connected key can see |
+| `GET` | `/v1/ops` | Operations you can run |
+| `POST` | `/v1/ops/{name}` | Run one operation; the JSON body holds its arguments |
+| `GET` | `/health` | Liveness |
+
+Authenticate with `Authorization: Bearer <key>` or `X-API-Key: <key>`. Bodies are limited to 1 MB.
+
+```bash
+curl https://asc-api.appeeky.com/v1/apps -H "Authorization: Bearer $APPEEKY_API_KEY"
+
+curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_list_builds \
+  -H "Authorization: Bearer $APPEEKY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"1234567890","limit":5}'
+
+curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_respond_to_review \
+  -H "Authorization: Bearer $APPEEKY_API_KEY" \
+  -H "X-ASC-Allow-Writes: true" \
+  -H "Content-Type: application/json" \
+  -d '{"reviewId":"00000000-0000-0000-0000-000000000000","responseBody":"Thanks!"}'
+```
+
+| Status | Code | Meaning |
+|--------|------|---------|
+| 401 | `MISSING_API_KEY` | No Appeeky key on the request |
+| 400 | `INVALID_ARGS` | Arguments failed validation (see `details`) |
+| 403 | `WRITES_DISABLED` | A write without `X-ASC-Allow-Writes: true` |
+| 404 | `UNKNOWN_OPERATION` | Unknown or CLI-only operation |
+| 413 | `BODY_TOO_LARGE` | Body over 1 MB |
+| 502 | `APP_STORE_CONNECT_ERROR` | Apple refused the call; the message carries Apple's errors |
+
+Refusals from Appeeky (invalid key, no App Store Connect connection, credits used up) come back with Appeeky's status and code.
+
+Operation names and arguments match the [operations reference](/reference/operations).

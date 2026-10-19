@@ -1,0 +1,14 @@
+---
+title: Customer reviews
+description: List, summarize and respond to App Store reviews.
+---
+
+```bash
+appstore reviews list [--rating 1,2] [--territory USA,DEU] [--unanswered] [--sort -createdDate] [--limit 50] [--all]
+appstore reviews get REVIEW_ID
+appstore reviews summary [--max 500]
+appstore reviews respond REVIEW_ID "Thanks!" --confirm
+appstore reviews delete-response RESPONSE_ID --confirm
+```
+
+Territories use three-letter codes (`USA`, `GBR`, `DEU`, `JPN`). See [Respond to reviews](/guides/respond-to-reviews).

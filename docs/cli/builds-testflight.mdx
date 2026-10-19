@@ -1,0 +1,45 @@
+---
+title: Builds and TestFlight
+description: Build state, export compliance, What to Test, groups, testers and beta review.
+---
+
+## Builds
+
+```bash
+appstore builds list [--marketing-version 2.4.0] [--build-number 412] [--platform IOS] [--state VALID] [--all]
+appstore builds latest [--marketing-version 2.4.0]
+appstore builds get BUILD_ID
+appstore builds state BUILD_ID
+appstore builds encryption BUILD_ID --uses-non-exempt-encryption false --confirm
+appstore builds what-to-test BUILD_ID "Test the new paywall" [--locale en-US] --confirm
+appstore builds expire BUILD_ID --confirm
+```
+
+## Groups
+
+```bash
+appstore testflight groups list
+appstore testflight groups create NAME [--internal] [--public-link] [--public-link-limit 500] --confirm
+appstore testflight groups delete GROUP_ID --confirm
+appstore testflight groups add-build GROUP_ID BUILD_ID… --confirm
+appstore testflight groups remove-build GROUP_ID BUILD_ID… --confirm
+appstore testflight groups add-tester GROUP_ID TESTER_ID… --confirm
+appstore testflight groups remove-tester GROUP_ID TESTER_ID… --confirm
+```
+
+## Testers
+
+```bash
+appstore testflight testers list [--group GROUP_ID] [--email a@b.co]
+appstore testflight testers invite EMAIL --group GROUP_ID[,GROUP_ID] [--first-name …] [--last-name …] --confirm
+appstore testflight testers resend TESTER_ID --confirm
+appstore testflight testers delete TESTER_ID --confirm
+```
+
+## Beta review
+
+```bash
+appstore testflight localizations
+appstore testflight review-details
+appstore testflight submit BUILD_ID --confirm
+```

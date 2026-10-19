@@ -1,0 +1,68 @@
+---
+title: Multi-account and apps
+description: Several API keys in one config file, with default apps and account routing.
+---
+
+Agencies and studios often hold keys for several teams. Save each one as a named account in `~/.config/appstore/config.json` (written with `0600` permissions).
+
+```bash
+appstore accounts add studio --key-id ABC123DEFG --issuer-id 0000… --private-key-path ~/keys/AuthKey_ABC123DEFG.p8 --vendor-number 85012345 --default
+appstore accounts add client-acme --key-id XYZ987WVUT --issuer-id 1111… --private-key-path ~/keys/AuthKey_XYZ987WVUT.p8
+appstore accounts list
+appstore accounts check
+```
+
+## Config format
+
+```json
+{
+  "defaultAccount": "studio",
+  "accounts": {
+    "studio": {
+      "issuerId": "00000000-0000-0000-0000-000000000000",
+      "keyId": "ABC123DEFG",
+      "privateKeyPath": "/Users/you/keys/AuthKey_ABC123DEFG.p8",
+      "vendorNumber": "85012345",
+      "defaultAppId": "1234567890",
+      "apps": [
+        { "appId": "1234567890", "bundleId": "com.studio.app", "name": "Studio App" }
+      ]
+    },
+    "client-acme": {
+      "issuerId": "11111111-1111-1111-1111-111111111111",
+      "keyId": "XYZ987WVUT",
+      "privateKeyPath": "/Users/you/keys/AuthKey_XYZ987WVUT.p8"
+    }
+  }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `keyId` | API key id |
+| `issuerId` | Issuer id; omit for Individual keys |
+| `privateKeyPath` | Path to the `.p8` file (`privateKey` with the PEM also works) |
+| `vendorNumber` | Used by `reports sales` / `reports finance` |
+| `defaultAppId` | Used when `--app` is omitted |
+| `apps` | Optional shortlist used for defaults and routing |
+
+## Apps
+
+App Store Connect can list every app a key can see, so registering apps is optional:
+
+```bash
+appstore --account client-acme apps list
+```
+
+Register apps when you want a default app or automatic routing:
+
+```bash
+appstore apps register 1234567890 --to studio --bundle-id com.studio.app --default
+appstore apps registered
+```
+
+When an app (by id or bundle id) is registered under exactly one account, MCP tools and `ops call` pick that account automatically. Otherwise pass `--account` (CLI) or the `account` argument (MCP).
+
+```bash
+appstore accounts use client-acme   # change the default
+```

@@ -18,7 +18,8 @@
     "typecheck": "pnpm -r run typecheck",
     "generate:types": "pnpm --filter @appeeky/app-store-connect-core run generate:types",
     "appstore": "pnpm --filter @appeeky/app-store-connect-cli exec appstore",
-    "appstore-mcp": "pnpm --filter @appeeky/app-store-connect-cli exec appstore-mcp"
+    "appstore-mcp": "pnpm --filter @appeeky/app-store-connect-cli exec appstore-mcp",
+    "docs:ops": "node scripts/generate-ops-reference.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

@@ -1,0 +1,27 @@
+---
+title: Errors and retries
+description: How Apple's errors are reported, and when requests are retried.
+---
+
+## Error messages
+
+Apple returns JSON:API errors. `appstore` prints every entry, and also the `meta.associatedErrors` list, which is where App Store Connect explains why a submission cannot move on:
+
+```text
+App Store Connect PATCH /v1/reviewSubmissions/6a1… failed (HTTP 409):
+409 STATE_ERROR.ENTITY_STATE_INVALID The request cannot be fulfilled…: Submission cannot be submitted.
+  - /v1/appStoreVersions/1234: ENTITY_ERROR.ATTRIBUTE.REQUIRED You must provide a value for the attribute 'whatsNew'.
+  - /v1/appStoreReviewDetails/5678: ENTITY_ERROR.ATTRIBUTE.INVALID Contact phone is invalid
+```
+
+In the SDK these are `ApiError` instances with `status`, `errors[]` (the raw entries) and `details` (the body).
+
+## Retries
+
+| Response | GET / PATCH / DELETE | POST |
+|----------|----------------------|------|
+| 429 | retried, waiting `Retry-After` when present | retried |
+| 500, 502, 503, 504 | retried with backoff | not retried |
+| network errors, timeouts | retried with backoff | not retried |
+
+POST is not retried after a server error because the first attempt may have created the object. Defaults: 4 attempts, 0.5 s doubling to 8 s, 60 s timeout per request.

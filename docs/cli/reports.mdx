@@ -1,0 +1,18 @@
+---
+title: Reports
+description: Sales and Trends, finance and analytics reports.
+---
+
+```bash
+appstore reports sales [--type SALES] [--sub-type SUMMARY] [--frequency DAILY] [--date 2026-10-18] [--report-version 1_0] [--vendor N] [--rows 1000] [-o file.tsv]
+appstore reports finance --date 2026-09 [--region ZZ] [--type FINANCE_DETAIL|FINANCIAL] [--vendor N] [-o file.tsv]
+
+appstore analytics requests
+appstore analytics request [--snapshot] --confirm
+appstore analytics reports REQUEST_ID [--category COMMERCE]
+appstore analytics instances REPORT_ID [--granularity DAILY] [--date 2026-10-18]
+appstore analytics segments INSTANCE_ID
+appstore analytics download SEGMENT_ID [--rows 200] [-o file.csv]
+```
+
+Without `-o`, rows print as a table (or JSON with `--json`). See [Download sales reports](/guides/sales-reports).

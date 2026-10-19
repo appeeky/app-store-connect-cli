@@ -1,0 +1,31 @@
+---
+title: Scope
+description: What this product covers, and what it does not.
+---
+
+## Included
+
+App Store Connect API operations for:
+
+- Apps, app infos and their localizations, categories, age rating, availability, territories
+- App Store versions, localizations, builds, App Review details
+- Review submissions, release requests, phased release
+- Builds, beta details, beta build localizations
+- TestFlight groups, testers, invitations, beta app localizations, Beta App Review
+- Customer reviews and responses
+- Screenshots and app previews, including uploads
+- In-app purchases, subscription groups, subscriptions, localizations, price points and price schedules
+- Users and invitations
+- Bundle IDs, capabilities, devices, certificates, provisioning profiles
+- Sales and Trends, finance and analytics reports
+- Any other endpoint through `appstore api` / `appstore_request`
+
+## Not included (yet)
+
+| Area | Notes |
+|------|-------|
+| Uploading binaries (`.ipa`, `.pkg`) | Use Xcode, `xcrun altool` or Transporter; the API's build upload flow is not wrapped yet |
+| Xcode Cloud, Game Center, App Clips, custom product pages, in-app events, offer codes | Reachable through `appstore_request` |
+| Setting prices and price schedules | Read helpers exist; writes go through `appstore_request` for now |
+| Creating certificates (CSR signing) | List and read only |
+| Notarization, App Store Server API, StoreKit | Different Apple APIs |

@@ -1,0 +1,26 @@
+---
+title: Global flags
+description: Key, account, app, JSON, read-only and confirm flags.
+---
+
+| Flag | Description |
+|------|-------------|
+| `--key-id <id>` | API key id |
+| `--issuer-id <id>` | Issuer id (omit for Individual keys) |
+| `--private-key <path\|pem>` | `.p8` path or the PEM itself |
+| `-a, --account <id>` | Named account from `~/.config/appstore/config.json` |
+| `--app <id\|bundleId>` | App for app-scoped commands; bundle ids are resolved to Apple ids |
+| `--json` | Machine-readable JSON output |
+| `--read-only` | Refuse every non-GET request |
+| `--confirm` | Required for write commands |
+
+Global flags can go before or after the subcommand:
+
+```bash
+appstore --account studio --app com.studio.app --json versions list
+appstore versions list --app 1234567890 --json
+```
+
+- Without `--app`, the account's `defaultAppId` (or `ASC_APP_ID`) is used.
+- `ops call` fills `appId` from `--app` when the JSON omits it.
+- Multi-key setup: [Multi-account and apps](/authentication-accounts).

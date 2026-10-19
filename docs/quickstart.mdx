@@ -1,0 +1,97 @@
+---
+title: Quickstart
+description: Install appstore from npm, add an App Store Connect API key, and run your first commands.
+---
+
+## Prerequisites
+
+- Node.js 20+
+- An App Store Connect API key: **Users and Access → Integrations → App Store Connect API**. Note the **Key ID**, the **Issuer ID** (team keys) and download the `.p8` file once.
+
+## Install
+
+```bash
+npm install -g @appeeky/app-store-connect-cli
+```
+
+This installs both binaries:
+
+- `appstore`: CLI
+- `appstore-mcp`: MCP server (stdio)
+
+```bash
+appstore --help
+appstore-mcp --help
+```
+
+Other package managers:
+
+```bash
+pnpm add -g @appeeky/app-store-connect-cli
+yarn global add @appeeky/app-store-connect-cli
+bun add -g @appeeky/app-store-connect-cli
+```
+
+## Authenticate
+
+Save the key as a named account:
+
+```bash
+appstore accounts add my-team \
+  --key-id ABC123DEFG \
+  --issuer-id 00000000-0000-0000-0000-000000000000 \
+  --private-key-path ~/.appstoreconnect/AuthKey_ABC123DEFG.p8 \
+  --default
+appstore whoami
+```
+
+Or use environment variables (handy in CI):
+
+```bash
+export ASC_KEY_ID=ABC123DEFG
+export ASC_ISSUER_ID=00000000-0000-0000-0000-000000000000
+export ASC_PRIVATE_KEY_PATH=~/.appstoreconnect/AuthKey_ABC123DEFG.p8
+```
+
+See [Authentication](/authentication) for Individual keys, inline PEMs and precedence.
+
+## First commands
+
+```bash
+appstore apps list
+appstore --app com.example.app versions list
+appstore --app com.example.app builds list --limit 5
+appstore --app com.example.app reviews list --rating 1,2 --unanswered
+```
+
+`--app` takes the numeric Apple ID or a bundle ID. Set a default so you can drop it:
+
+```bash
+appstore apps register 1234567890 --to my-team --bundle-id com.example.app --default
+```
+
+## Writes need --confirm
+
+```bash
+appstore --app com.example.app versions create 2.4.0 --confirm
+appstore --app com.example.app submit VERSION_ID --confirm
+```
+
+## Call any operation
+
+Dedicated commands cover common workflows; everything else goes through the registry:
+
+```bash
+appstore ops list testflight
+appstore ops call appstore_list_beta_groups '{"appId":"1234567890"}'
+appstore api GET /v1/apps/1234567890/appStoreVersions --query limit=5
+```
+
+The same names are MCP tools; see [MCP setup](/mcp/setup).
+
+## Read-only mode
+
+```bash
+appstore --read-only --app com.example.app versions list
+appstore-mcp --read-only
+```

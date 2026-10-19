@@ -1,0 +1,51 @@
+---
+title: Manage subscriptions
+description: Subscription groups, subscriptions, localizations and prices.
+---
+
+```bash
+export ASC_APP_ID=1234567890
+```
+
+## Groups
+
+```bash
+appstore subscriptions groups
+appstore subscriptions create-group "Pro" --confirm
+```
+
+## Subscriptions
+
+```bash
+appstore subscriptions create GROUP_ID com.example.pro.monthly \
+  --name "Pro Monthly" --period ONE_MONTH --level 1 --confirm
+appstore subscriptions list GROUP_ID
+appstore subscriptions update SUBSCRIPTION_ID --review-note "Unlocks all features." --confirm
+```
+
+## Localizations
+
+```bash
+appstore subscriptions localize SUBSCRIPTION_ID en-US --name "Pro" --description "All features, billed monthly" --confirm
+appstore subscriptions localizations SUBSCRIPTION_ID
+```
+
+Group display names: `appstore_create_subscription_group_localization`.
+
+## Prices
+
+```bash
+appstore subscriptions prices SUBSCRIPTION_ID --territory USA
+appstore subscriptions price-points SUBSCRIPTION_ID --territory USA
+```
+
+Setting prices (`subscriptionPrices` with a price point) is available through `appstore api POST /v1/subscriptionPrices …` while dedicated commands are added.
+
+## In-app purchases
+
+```bash
+appstore iap list --type CONSUMABLE
+appstore iap create com.example.coins100 --name "100 Coins" --type CONSUMABLE --confirm
+appstore iap localize IAP_ID en-US --name "100 Coins" --description "A pile of coins" --confirm
+appstore iap price-points IAP_ID --territory USA
+```

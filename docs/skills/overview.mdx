@@ -1,0 +1,56 @@
+---
+title: Agent skills
+description: Install appstore workflow skills for Cursor, Codex, and other coding agents.
+---
+
+Agent skills teach coding agents how to run App Store Connect tasks with the right `appstore` / `appstore-mcp` commands. They follow the open [Agent Skills](https://agentskills.io/) format and install with the Skills CLI (`npx skills`).
+
+## Install
+
+```bash
+npm install -g @appeeky/app-store-connect-cli
+appstore install-skills
+```
+
+This installs every `appstore-*` skill globally (`-g`) for the agents the Skills CLI detects. Pick agents explicitly:
+
+```bash
+appstore install-skills --agent cursor codex
+appstore install-skills --no-global      # current project only
+```
+
+From a clone of the repository:
+
+```bash
+npx skills add ./skills --skill '*' -g -y
+```
+
+Restart the agent or IDE window after installing.
+
+## Skills vs MCP
+
+| Piece | Role |
+|-------|------|
+| **Skills** | Workflow instructions the agent follows |
+| **`appstore-mcp`** | Live tools that call App Store Connect |
+
+Install both for the best results. See [MCP setup](/mcp/setup).
+
+## Available skills
+
+| Skill | Use for |
+|-------|---------|
+| `appstore-cli` | General CLI usage; start here |
+| `appstore-auth` | API keys, env vars, Individual keys, read-only |
+| `appstore-accounts` | Several keys and default apps |
+| `appstore-mcp` | Local and hosted MCP setup |
+| `appstore-ops` | The full registry, `ops call`, `api` |
+| `appstore-release` | Versions, metadata, submit, release, phased release |
+| `appstore-testflight` | Builds, groups, testers, beta review |
+| `appstore-reviews` | Review summary and responses |
+| `appstore-media` | Screenshots and previews |
+| `appstore-monetization` | In-app purchases and subscriptions |
+| `appstore-signing` | Bundle IDs, devices, certificates, profiles |
+| `appstore-users` | Team members and invitations |
+| `appstore-reports` | Sales, finance and analytics reports |
+| `appstore-troubleshooting` | Common errors and fixes |

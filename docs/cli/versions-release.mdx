@@ -1,0 +1,58 @@
+---
+title: Versions, submissions and release
+description: Version metadata, App Review submissions, release and phased release.
+---
+
+## Versions
+
+```bash
+appstore versions list [--platform IOS] [--version-string 2.4.0] [--state PREPARE_FOR_SUBMISSION]
+appstore versions get VERSION_ID
+appstore versions create 2.4.0 [--platform IOS] [--release-type MANUAL|AFTER_APPROVAL|SCHEDULED] [--release-date ISO] [--build BUILD_ID] --confirm
+appstore versions update VERSION_ID [--version-string …] [--copyright …] [--release-type …] --confirm
+appstore versions delete VERSION_ID --confirm
+```
+
+## Localizations
+
+```bash
+appstore versions localizations VERSION_ID
+appstore versions set-localization VERSION_ID de-DE \
+  --description "…" --keywords "foto,editor" --whats-new "…" --promotional-text "…" \
+  --support-url https://example.com/help --marketing-url https://example.com --confirm
+```
+
+## Build and review details
+
+```bash
+appstore versions attach-build VERSION_ID BUILD_ID --confirm
+appstore versions detach-build VERSION_ID --confirm
+appstore versions review-details VERSION_ID
+appstore versions set-review-details VERSION_ID --email review@example.com --phone "+1 555 0100" --notes "…" --confirm
+```
+
+## Submit
+
+```bash
+appstore submit VERSION_ID [--platform IOS] --confirm
+```
+
+Step by step:
+
+```bash
+appstore submissions list [--state READY_FOR_REVIEW,WAITING_FOR_REVIEW]
+appstore submissions create --platform IOS --confirm
+appstore submissions add-item SUBMISSION_ID VERSION_ID --confirm
+appstore submissions submit SUBMISSION_ID --confirm
+appstore submissions cancel SUBMISSION_ID --confirm
+```
+
+## Release
+
+```bash
+appstore release VERSION_ID --confirm          # Pending Developer Release → live
+appstore phased-release get VERSION_ID
+appstore phased-release start VERSION_ID [--active] --confirm
+appstore phased-release pause|resume|complete VERSION_ID --confirm
+appstore phased-release delete VERSION_ID --confirm
+```

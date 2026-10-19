@@ -1,0 +1,21 @@
+---
+title: Call any operation
+description: appstore ops call runs any registry operation with JSON arguments.
+---
+
+```bash
+appstore ops call <name> '<json args>'
+```
+
+```bash
+appstore ops call appstore_list_versions '{"appId":"1234567890","platform":"IOS"}'
+appstore --app com.example.app ops call appstore_list_builds '{"limit":5}'
+appstore ops call appstore_update_subscription '{"subscriptionId":"6444","reviewNote":"…"}' --confirm
+```
+
+- Arguments are validated against the op's schema before any request.
+- `--app` fills `appId`; bundle ids are resolved.
+- Write operations need `--confirm`.
+- Output is always JSON.
+
+MCP tools have the same names and arguments; see [MCP tools](/mcp/tools).

@@ -1,0 +1,39 @@
+---
+title: Upload screenshots
+description: Screenshot sets, uploads from local files, ordering and cleanup.
+---
+
+Screenshots belong to a version localization, grouped in one set per display type.
+
+```bash
+appstore versions localizations VERSION_ID          # find the localization id
+appstore screenshots sets LOCALIZATION_ID
+appstore screenshots create-set LOCALIZATION_ID APP_IPHONE_67 --confirm
+```
+
+## Upload
+
+```bash
+appstore screenshots upload SET_ID ./shots/en-US/01.png ./shots/en-US/02.png --wait --confirm
+```
+
+Each file goes through Apple's three steps: reserve (name and size), upload each part to the URLs Apple returns, then commit with the file's MD5 checksum. `--wait` polls until Apple has processed the image. The upload URLs never receive your API token.
+
+Previews work the same way:
+
+```bash
+appstore previews create-set LOCALIZATION_ID IPHONE_67 --confirm
+appstore previews upload SET_ID ./preview.mov --wait --confirm
+```
+
+## Order and delete
+
+```bash
+appstore screenshots list SET_ID
+appstore screenshots reorder SET_ID SHOT_3 SHOT_1 SHOT_2 --confirm
+appstore screenshots delete SHOT_ID --confirm
+```
+
+<Note>
+Uploads read local files, so they are CLI and local MCP only. The hosted server lists, reorders and deletes, but does not upload.
+</Note>

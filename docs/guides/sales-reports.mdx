@@ -1,0 +1,51 @@
+---
+title: Download sales reports
+description: Sales and Trends, finance and analytics reports as JSON rows or raw files.
+---
+
+Reports need your **vendor number** (Payments and Financial Reports, top left) and a key with the Finance, Sales or Admin role. Store the vendor number on the account or pass `--vendor`.
+
+```bash
+appstore accounts add my-team … --vendor-number 85012345
+```
+
+## Sales and Trends
+
+```bash
+# Daily summary for one day
+appstore reports sales --date 2026-10-18
+
+# Monthly subscription report
+appstore reports sales --type SUBSCRIPTION --sub-type SUMMARY --frequency MONTHLY --date 2026-09 --report-version 1_3
+
+# Raw TSV file
+appstore reports sales --date 2026-10-18 -o ./sales-2026-10-18.tsv
+```
+
+Reports arrive gzipped; `appstore` unzips and parses them into rows keyed by column name. JSON output also has `columns`, `totalRows` and `truncated` (use `--rows` to raise the 1000-row default).
+
+## Finance
+
+```bash
+appstore reports finance --date 2026-09 --region ZZ --type FINANCE_DETAIL
+appstore reports finance --date 2026-09 --region US --type FINANCIAL -o ./finance-us-2026-09.tsv
+```
+
+Total lines at the end of finance reports are returned as `extraLines`.
+
+## Analytics reports
+
+Analytics reports are requested once, then generated daily:
+
+```bash
+appstore --app 1234567890 analytics request --confirm     # ONGOING
+appstore --app 1234567890 analytics requests
+appstore analytics reports REQUEST_ID --category APP_STORE_ENGAGEMENT
+appstore analytics instances REPORT_ID --granularity DAILY
+appstore analytics segments INSTANCE_ID
+appstore analytics download SEGMENT_ID --rows 200
+```
+
+## MCP
+
+`appstore_download_sales_report`, `appstore_download_finance_report`, `appstore_list_analytics_report_requests`, `appstore_download_analytics_segment`.

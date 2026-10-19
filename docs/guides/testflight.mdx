@@ -1,0 +1,62 @@
+---
+title: TestFlight distribution
+description: Groups, testers, What to Test notes and Beta App Review.
+---
+
+```bash
+export ASC_APP_ID=1234567890
+```
+
+## Find the build
+
+```bash
+appstore builds latest
+appstore builds state BUILD_ID
+```
+
+Wait for `processingState: VALID`.
+
+## What to Test
+
+```bash
+appstore builds what-to-test BUILD_ID "Try the new onboarding." --locale en-US --confirm
+```
+
+## Groups
+
+```bash
+appstore testflight groups list
+appstore testflight groups create "Internal QA" --internal --confirm
+appstore testflight groups create "Public beta" --public-link --public-link-limit 500 --confirm
+appstore testflight groups add-build GROUP_ID BUILD_ID --confirm
+```
+
+## Testers
+
+```bash
+appstore testflight testers invite ada@example.com --group GROUP_ID --first-name Ada --confirm
+appstore testflight groups add-tester GROUP_ID TESTER_ID --confirm
+appstore testflight testers list --group GROUP_ID
+appstore testflight testers resend TESTER_ID --confirm
+```
+
+## External testing
+
+External groups need an approved build. Fill in the beta details once, then submit:
+
+```bash
+appstore testflight localizations
+appstore ops call appstore_update_beta_review_details --confirm \
+  '{"detailId":"DETAIL_ID","contactEmail":"beta@example.com","demoAccountRequired":false}'
+appstore testflight submit BUILD_ID --confirm
+```
+
+## Expire old builds
+
+```bash
+appstore builds expire BUILD_ID --confirm
+```
+
+## MCP
+
+`appstore_list_builds`, `appstore_create_beta_group`, `appstore_add_builds_to_beta_group`, `appstore_invite_beta_tester`, `appstore_submit_for_beta_review`, `appstore_create_beta_build_localization`.

@@ -1,0 +1,14 @@
+---
+title: Changelog
+description: Release notes for the App Store Connect CLI, MCP and SDK.
+---
+
+## 0.1.0
+
+- First release of `appstore`, `appstore-mcp`, the core SDK and the hosted server
+- ES256 API key auth for team and Individual keys, cached tokens, hosted access tokens
+- Types generated from Apple's App Store Connect OpenAPI spec 4.5.1
+- 168 operations across apps, versions, submissions, release, builds, TestFlight, reviews, media, in-app purchases, subscriptions, pricing, users, signing, reports and analytics, plus `appstore_request`
+- Pagination, retries with Retry-After, and readable errors including `associatedErrors`
+- Multi-account config, `--read-only` and `--confirm`
+- Hosted MCP and REST, read-only unless `X-ASC-Allow-Writes: true`

@@ -1,0 +1,40 @@
+---
+title: Respond to reviews
+description: Find unanswered reviews, summarize them, and publish responses.
+---
+
+## Summary first
+
+```bash
+appstore --app 1234567890 reviews summary --max 500
+```
+
+Returns the rating distribution, average, reviews per territory, how many are unanswered, and the latest 1-2 star reviews.
+
+## List
+
+```bash
+appstore --app 1234567890 reviews list --rating 1,2 --unanswered --limit 50
+appstore --app 1234567890 reviews list --territory USA,GBR --sort -createdDate
+```
+
+## Respond
+
+```bash
+appstore reviews respond REVIEW_ID "Thanks for flagging this. Version 2.4.1 fixes the sync issue." --confirm
+```
+
+A new response replaces the previous one. Responses start as `PENDING_PUBLISH` and appear on the App Store after Apple processes them.
+
+```bash
+appstore reviews get REVIEW_ID          # includes the current response
+appstore reviews delete-response RESPONSE_ID --confirm
+```
+
+## MCP
+
+`appstore_reviews_summary`, `appstore_list_customer_reviews` (`hasResponse: false` for unanswered), `appstore_respond_to_review`, `appstore_delete_review_response`.
+
+<Tip>
+Let the agent draft replies, and approve each one before it calls `appstore_respond_to_review`.
+</Tip>

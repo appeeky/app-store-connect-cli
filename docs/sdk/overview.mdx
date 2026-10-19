@@ -1,0 +1,29 @@
+---
+title: SDK overview
+description: The TypeScript client behind appstore, appstore-mcp and the hosted server.
+---
+
+The client lives in the monorepo as `@appeeky/app-store-connect-core`. It is bundled into `@appeeky/app-store-connect-cli` and not published on its own yet; use the workspace, or open an issue if you need a standalone package.
+
+```ts
+import { AppStoreConnectClient } from "@appeeky/app-store-connect-core";
+
+const client = AppStoreConnectClient.create({
+  keyId: "ABC123DEFG",
+  issuerId: "00000000-0000-0000-0000-000000000000",
+  privateKey: "/path/to/AuthKey_ABC123DEFG.p8", // or the PEM
+});
+
+const apps = await client.apps.list({ bundleId: "com.example.app" });
+const builds = await client.builds.list("1234567890", { processingState: "VALID", limit: 5 });
+```
+
+What you get:
+
+- ES256 token signing and caching (team and Individual keys)
+- Retries with backoff and `Retry-After`, timeouts, pagination
+- `ApiError` messages that include Apple's `associatedErrors`
+- Request bodies typed from Apple's OpenAPI spec (`Schemas["AppStoreVersionCreateRequest"]`, …)
+- The operation registry (`ASC_OPS`, `invokeOp`)
+
+Next: [AppStoreConnectClient](/sdk/client).

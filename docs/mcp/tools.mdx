@@ -1,0 +1,56 @@
+---
+title: MCP tools
+description: How MCP tools map to the operations registry, with examples.
+---
+
+Every entry in `ASC_OPS` is a tool with the same name and argument schema. Discovery:
+
+| Tool | Description |
+|------|-------------|
+| `appstore_search_capabilities` | Search operations by keyword |
+| `appstore_list_capabilities` | List every operation |
+
+## Examples
+
+**Find an app**
+
+```json
+{ "name": "appstore_find_app", "arguments": { "bundleId": "com.example.app" } }
+```
+
+**Unanswered low ratings**
+
+```json
+{
+  "name": "appstore_list_customer_reviews",
+  "arguments": { "appId": "1234567890", "rating": [1, 2], "hasResponse": false, "limit": 20 }
+}
+```
+
+**Latest build**
+
+```json
+{ "name": "appstore_get_latest_build", "arguments": { "appId": "1234567890", "marketingVersion": "2.4.0" } }
+```
+
+**Submit (write)**
+
+```json
+{
+  "name": "appstore_submit_version",
+  "arguments": { "appId": "1234567890", "versionId": "VERSION_ID", "platform": "IOS" }
+}
+```
+
+**Anything else**
+
+```json
+{
+  "name": "appstore_request",
+  "arguments": { "method": "GET", "path": "/v1/apps/1234567890/appClips", "query": { "limit": 10 } }
+}
+```
+
+With `appstore-mcp`, tools also take `account` to pick a key from the config. If the `appId` is registered under exactly one account, it is picked automatically.
+
+CLI equivalent: `appstore ops call <tool> '<json>'`. Full catalog: [Operations reference](/reference/operations).

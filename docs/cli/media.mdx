@@ -1,0 +1,22 @@
+---
+title: Screenshots and previews
+description: Sets, uploads, ordering and deletion.
+---
+
+`screenshots` and `previews` have the same commands:
+
+```bash
+appstore screenshots sets LOCALIZATION_ID
+appstore screenshots create-set LOCALIZATION_ID APP_IPHONE_67 --confirm
+appstore screenshots list SET_ID
+appstore screenshots upload SET_ID ./01.png ./02.png [--wait] --confirm
+appstore screenshots reorder SET_ID ID_A ID_B ID_C --confirm
+appstore screenshots delete SCREENSHOT_ID --confirm
+
+appstore previews create-set LOCALIZATION_ID IPHONE_67 --confirm
+appstore previews upload SET_ID ./preview.mov --wait --confirm
+```
+
+Common display types: `APP_IPHONE_67` (6.7"/6.9"), `APP_IPHONE_65`, `APP_IPHONE_61`, `APP_IPAD_PRO_3GEN_129`, `APP_DESKTOP`, `APP_APPLE_TV`, `APP_APPLE_VISION_PRO`. Preview types drop the `APP_` prefix (`IPHONE_67`).
+
+See [Upload screenshots](/guides/screenshots).

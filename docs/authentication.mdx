@@ -1,0 +1,86 @@
+---
+title: Authentication
+description: App Store Connect API keys, JWT signing, and credential precedence.
+---
+
+`appstore` signs its own tokens with your API key. Nothing leaves your machine except the requests to `api.appstoreconnect.apple.com`.
+
+## Create a key
+
+1. In App Store Connect open **Users and Access → Integrations → App Store Connect API**.
+2. Create a **Team key** with the lowest role that covers your work (App Manager covers most publishing; Finance or Sales is needed for reports; Admin for users).
+3. Copy the **Key ID** and the **Issuer ID**, and download `AuthKey_<KEYID>.p8`. Apple lets you download it only once.
+
+**Individual keys** (generated under your own user profile) work too. They have no issuer ID: leave it out and `appstore` signs tokens with `sub: "user"` instead of `iss`.
+
+<Warning>
+The `.p8` file is a password. Keep it out of source control. If it leaks, revoke the key in App Store Connect and create a new one.
+</Warning>
+
+## How tokens are made
+
+Each token is an ES256 JWT:
+
+- header `{ "alg": "ES256", "kid": "<key id>", "typ": "JWT" }`
+- payload `{ "iss": "<issuer id>", "iat": …, "exp": …, "aud": "appstoreconnect-v1" }` (Individual keys: `"sub": "user"` instead of `iss`)
+- lifetime 19 minutes (Apple's limit is 20); a token is reused until about a minute before it expires
+
+## Precedence
+
+1. Flags: `--key-id`, `--issuer-id`, `--private-key <path|pem>`
+2. Environment: `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY` (the PEM, `\n` escapes allowed) or `ASC_PRIVATE_KEY_PATH`
+3. `--account <id>`, or the default account in `~/.config/appstore/config.json`
+
+Passing `--account` always selects that config account, even when `ASC_*` variables are set.
+
+## Examples
+
+```bash
+# Flags
+appstore --key-id ABC123DEFG --issuer-id 0000… --private-key ./AuthKey_ABC123DEFG.p8 apps list
+
+# Inline PEM from a CI secret
+export ASC_KEY_ID=ABC123DEFG
+export ASC_ISSUER_ID=0000…
+export ASC_PRIVATE_KEY="$APP_STORE_CONNECT_P8"
+appstore whoami
+
+# Individual key: no issuer
+appstore --key-id INDIV12345 --private-key ./AuthKey_INDIV12345.p8 whoami
+```
+
+Other environment variables:
+
+| Variable | Use |
+|----------|-----|
+| `ASC_VENDOR_NUMBER` | Default vendor number for sales and finance reports |
+| `ASC_APP_ID` | Default `--app` |
+
+## MCP
+
+```json
+{
+  "mcpServers": {
+    "app-store-connect": {
+      "command": "appstore-mcp",
+      "env": {
+        "ASC_KEY_ID": "ABC123DEFG",
+        "ASC_ISSUER_ID": "00000000-0000-0000-0000-000000000000",
+        "ASC_PRIVATE_KEY_PATH": "/Users/you/.appstoreconnect/AuthKey_ABC123DEFG.p8"
+      }
+    }
+  }
+}
+```
+
+## Without a key file
+
+The [hosted server](/mcp/hosted) uses the App Store Connect connection in your Appeeky account. Your Appeeky API key goes in; Appeeky signs a short-lived token for each call.
+
+## Write safety
+
+| Mechanism | Behavior |
+|-----------|----------|
+| `--confirm` (CLI) | Required for every write command and for `ops call` / `api` on writes |
+| `--read-only` | The client refuses every non-GET request |
+| `appstore-mcp --read-only` | Same, for agent sessions |

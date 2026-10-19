@@ -1,0 +1,35 @@
+---
+title: Read-only mode
+description: Block every change to App Store Connect while keeping all reads.
+---
+
+Pass `--read-only` to `appstore` or `appstore-mcp`. The client then refuses every non-GET request before it reaches Apple, including raw `appstore api` and `appstore_request` calls.
+
+## Blocked
+
+- Creating, updating or deleting versions, localizations, review details
+- Review submissions, releases, phased release changes
+- Build updates, TestFlight groups, testers and beta submissions
+- Review responses
+- Screenshot and preview uploads, reorders and deletes
+- In-app purchase and subscription changes
+- User, invitation, bundle ID, device and profile changes
+- Analytics report requests
+- Local config edits through MCP (`appstore_register_account`, …)
+
+## Allowed
+
+- Every `GET`: lists, details, reports, analytics segments, profile downloads to a local file
+
+## When to use
+
+- Agent sessions that should only look
+- Dashboards and scheduled report jobs
+- Pairing with `--json` for scripts
+
+```bash
+appstore-mcp --read-only
+appstore --read-only --app com.example.app reviews summary
+```
+
+The [hosted server](/mcp/hosted) is read-only by default.

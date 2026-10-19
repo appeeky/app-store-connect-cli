@@ -1,0 +1,37 @@
+---
+title: In-app purchases and subscriptions
+description: Products, localizations and price points.
+---
+
+## In-app purchases
+
+```bash
+appstore iap list [--type CONSUMABLE] [--product-id com.example.coins]
+appstore iap get IAP_ID
+appstore iap create PRODUCT_ID --name "Reference name" --type CONSUMABLE|NON_CONSUMABLE|NON_RENEWING_SUBSCRIPTION [--family-sharable] --confirm
+appstore iap localizations IAP_ID
+appstore iap localize IAP_ID en-US --name "100 Coins" [--description "…"] --confirm
+appstore iap price-points IAP_ID [--territory USA]
+```
+
+## Subscriptions
+
+```bash
+appstore subscriptions groups
+appstore subscriptions create-group "Pro" --confirm
+appstore subscriptions list GROUP_ID
+appstore subscriptions get SUBSCRIPTION_ID
+appstore subscriptions create GROUP_ID PRODUCT_ID --name "Pro Monthly" --period ONE_MONTH [--level 1] --confirm
+appstore subscriptions update SUBSCRIPTION_ID [--name …] [--period …] [--level …] [--review-note …] --confirm
+appstore subscriptions localizations SUBSCRIPTION_ID
+appstore subscriptions localize SUBSCRIPTION_ID en-US --name "Pro" [--description "…"] --confirm
+appstore subscriptions prices SUBSCRIPTION_ID [--territory USA]
+appstore subscriptions price-points SUBSCRIPTION_ID [--territory USA]
+```
+
+## App pricing
+
+```bash
+appstore pricing points --territory USA
+appstore pricing schedule
+```

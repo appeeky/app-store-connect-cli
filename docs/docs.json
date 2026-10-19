@@ -1,0 +1,119 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "App Store Connect CLI",
+  "theme": "maple",
+  "colors": {
+    "primary": "#27272a",
+    "light": "#e4e4e7",
+    "dark": "#fafafa"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "fonts": {
+    "family": "Geist",
+    "heading": {
+      "family": "Geist"
+    }
+  },
+  "background": {
+    "color": {
+      "light": "#fafafa",
+      "dark": "#050506"
+    }
+  },
+  "styling": {
+    "codeblocks": {
+      "theme": {
+        "light": "github-light",
+        "dark": "github-dark"
+      }
+    }
+  },
+  "favicon": "/favicon.png",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://appeeky.com"
+  },
+  "description": "CLI, MCP, and TypeScript SDK for the App Store Connect API.",
+  "seo": {
+    "metatags": {
+      "og:site_name": "App Store Connect CLI",
+      "og:title": "App Store Connect CLI",
+      "og:description": "CLI, MCP, and TypeScript SDK for the App Store Connect API.",
+      "twitter:card": "summary",
+      "twitter:title": "App Store Connect CLI",
+      "twitter:description": "CLI, MCP, and TypeScript SDK for the App Store Connect API."
+    }
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "authentication",
+          "authentication-accounts",
+          "skills/overview",
+          "architecture"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/ops-registry",
+          "concepts/ids-and-resources",
+          "concepts/read-only",
+          "concepts/errors"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/submit-for-review",
+          "guides/testflight",
+          "guides/respond-to-reviews",
+          "guides/subscriptions",
+          "guides/sales-reports",
+          "guides/screenshots"
+        ]
+      },
+      {
+        "group": "CLI",
+        "pages": [
+          "cli/overview",
+          "cli/global-flags",
+          "cli/accounts-apps",
+          "cli/discovery",
+          "cli/versions-release",
+          "cli/builds-testflight",
+          "cli/reviews",
+          "cli/media",
+          "cli/monetization",
+          "cli/users-signing",
+          "cli/reports",
+          "cli/call-ops"
+        ]
+      },
+      {
+        "group": "MCP",
+        "pages": ["mcp/overview", "mcp/setup", "mcp/hosted", "mcp/tools"]
+      },
+      {
+        "group": "SDK",
+        "pages": ["sdk/overview", "sdk/client"]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/operations",
+          "reference/scope",
+          "changelog",
+          "contributing"
+        ]
+      }
+    ]
+  }
+}

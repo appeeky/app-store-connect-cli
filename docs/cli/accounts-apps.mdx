@@ -1,0 +1,40 @@
+---
+title: Accounts and apps
+description: Named API keys, defaults, and the app list.
+---
+
+```bash
+appstore accounts add <id> --key-id <id> --private-key-path <p8> [--issuer-id <id>] [--vendor-number <n>] [--default-app <appId>] [--default]
+appstore accounts list
+appstore accounts use <id>
+appstore accounts remove <id>
+appstore accounts check          # lists one app per account to prove each key works
+```
+
+## Apps from Apple
+
+```bash
+appstore apps list [--bundle-id com.a,com.b] [--name "My App"] [--all]
+appstore apps get [appIdOrBundleId]
+appstore apps find com.example.app
+```
+
+## App info
+
+```bash
+appstore apps infos
+appstore apps localizations APP_INFO_ID
+appstore apps set-localization APP_INFO_ID en-US --name "Example" --subtitle "Does the thing" --confirm
+appstore apps categories --platform IOS
+appstore apps set-categories APP_INFO_ID --primary PRODUCTIVITY --secondary UTILITIES --confirm
+appstore apps age-rating APP_INFO_ID
+appstore apps availability
+```
+
+## Local app list
+
+```bash
+appstore apps register 1234567890 --to studio --bundle-id com.studio.app --default
+appstore apps registered
+appstore apps unregister 1234567890 --from studio
+```

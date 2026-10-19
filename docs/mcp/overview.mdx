@@ -1,0 +1,28 @@
+---
+title: MCP overview
+description: Give AI agents App Store Connect tools over the Model Context Protocol.
+---
+
+Two ways to connect an agent:
+
+| | `appstore-mcp` (local) | Hosted (`asc-api.appeeky.com/mcp`) |
+|-|-------------------------|-------------------------------------|
+| Transport | stdio | Streamable HTTP |
+| Credentials | Your `.p8` key on your machine | Your Appeeky connection; no key file |
+| Writes | On unless `--read-only` | Off unless `X-ASC-Allow-Writes: true` |
+| Uploads / profile downloads | Yes (local files) | No |
+| Multi-account | `account` argument | The account connected in Appeeky |
+
+Every operation in the [registry](/reference/operations) is a tool with the same name and arguments as `appstore ops call`. Two helpers find the right one:
+
+- `appstore_search_capabilities`
+- `appstore_list_capabilities`
+
+Agents can then:
+
+- Inspect apps, versions, builds, reviews, TestFlight, prices and reports
+- Prepare a release (metadata, build, review details) and submit it
+- Draft and publish review responses
+- Run analytics and sales reports
+
+See [Setup](/mcp/setup), [Hosted](/mcp/hosted) and [Tools](/mcp/tools).

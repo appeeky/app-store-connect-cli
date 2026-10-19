@@ -1,0 +1,83 @@
+---
+title: Submit a version for review
+description: Create a version, fill in metadata, attach a build, and send it to App Review.
+---
+
+Set the app once so the commands stay short:
+
+```bash
+export ASC_APP_ID=1234567890   # or pass --app com.example.app
+```
+
+## 1. Create the version
+
+```bash
+appstore versions create 2.4.0 --platform IOS --release-type MANUAL --confirm
+appstore versions list --state PREPARE_FOR_SUBMISSION
+```
+
+Note the version id.
+
+## 2. Metadata per locale
+
+```bash
+appstore versions localizations VERSION_ID
+appstore versions set-localization VERSION_ID en-US \
+  --whats-new "Faster sync and a new widget." \
+  --promotional-text "Now with widgets." \
+  --confirm
+```
+
+`set-localization` updates the locale if it exists and creates it otherwise. Keywords are comma-separated and limited to 100 bytes.
+
+## 3. Attach a build
+
+```bash
+appstore builds list --marketing-version 2.4.0 --state VALID
+appstore builds encryption BUILD_ID --uses-non-exempt-encryption false --confirm
+appstore versions attach-build VERSION_ID BUILD_ID --confirm
+```
+
+## 4. App Review details
+
+```bash
+appstore versions set-review-details VERSION_ID \
+  --first-name Ada --last-name Lovelace --phone "+1 555 0100" --email review@example.com \
+  --demo-required false --notes "Sign in is optional." \
+  --confirm
+```
+
+## 5. Submit
+
+```bash
+appstore submit VERSION_ID --confirm
+```
+
+This reuses an open review submission for the app and platform (or creates one), adds the version, and submits it. If Apple refuses, the error lists each missing field from `associatedErrors`.
+
+Check progress:
+
+```bash
+appstore submissions list --state WAITING_FOR_REVIEW,IN_REVIEW
+```
+
+## 6. Release
+
+With `--release-type MANUAL`, release after approval:
+
+```bash
+appstore release VERSION_ID --confirm
+```
+
+Or roll out over 7 days:
+
+```bash
+appstore phased-release start VERSION_ID --confirm
+appstore phased-release pause VERSION_ID --confirm
+appstore phased-release resume VERSION_ID --confirm
+appstore phased-release complete VERSION_ID --confirm
+```
+
+## MCP
+
+`appstore_create_version`, `appstore_update_version_localization`, `appstore_attach_build`, `appstore_update_review_details`, `appstore_submit_version`, `appstore_release_version`, `appstore_update_phased_release`.

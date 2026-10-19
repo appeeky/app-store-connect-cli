@@ -1,0 +1,65 @@
+---
+title: AppStoreConnectClient
+description: Create a client, use resource helpers, call raw endpoints and run registered operations.
+---
+
+## Create
+
+```ts
+import { AppStoreConnectClient, ClientRegistry } from "@appeeky/app-store-connect-core";
+
+// From options or ASC_* environment variables
+const client = AppStoreConnectClient.create({ readOnly: true });
+
+// From ~/.config/appstore/config.json
+const registry = ClientRegistry.load({ account: "studio" });
+const { client: studio } = await registry.getClientForArgs({});
+
+// With a token signed elsewhere (no key on this machine)
+const hosted = AppStoreConnectClient.fromAccessToken(token, { readOnly: true });
+```
+
+Options: `readOnly`, `vendorNumber`, `timeoutMs` (default 60 000), `retry` (`maxAttempts`, `baseDelayMs`, `maxDelayMs`), `fetch`, `baseUrl`.
+
+## Resource helpers
+
+```ts
+await client.apps.resolveAppId("com.example.app");
+await client.versions.create(appId, { platform: "IOS", versionString: "2.4.0" });
+await client.versions.updateLocalization(locId, { whatsNew: "Bug fixes" });
+await client.submissions.submitVersion(appId, versionId, "IOS");
+await client.testflight.addBuildsToGroup(groupId, [buildId]);
+await client.reviews.summary(appId, { maxReviews: 300 });
+await client.media.upload("screenshot", setId, "./01.png", { wait: true });
+await client.reports.salesReport({ reportType: "SALES", reportSubType: "SUMMARY", frequency: "DAILY" });
+```
+
+Namespaces: `apps`, `versions`, `submissions`, `builds`, `testflight`, `reviews`, `media`, `iap`, `subscriptions`, `users`, `signing`, `reports`.
+
+## Raw requests
+
+```ts
+const doc = await client.get("/v1/apps/123/appClips", { limit: 10 });
+const all = await client.paginate("/v1/apps", { "filter[sku]": "EX" }, { maxItems: 500 });
+await client.request("PATCH", "/v1/apps/123", { body: { data: { type: "apps", id: "123", attributes: {} } } });
+```
+
+Writes throw `ReadOnlyError` on a read-only client. Failed calls throw `ApiError` with `status`, `errors` and a readable `message`.
+
+## Generated types
+
+```ts
+import type { Schemas, AttributesOf } from "@appeeky/app-store-connect-core";
+
+type NewVersion = Schemas["AppStoreVersionCreateRequest"];
+type LocalizationFields = AttributesOf<"AppStoreVersionLocalizationUpdateRequest">;
+```
+
+## Run operations by name
+
+```ts
+import { invokeOp, listOps } from "@appeeky/app-store-connect-core";
+
+listOps("testflight");
+await invokeOp(client, "appstore_list_beta_groups", { appId: "1234567890" });
+```

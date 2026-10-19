@@ -1,0 +1,44 @@
+---
+title: Users and signing
+description: Team members, invitations, bundle IDs, devices, certificates and profiles.
+---
+
+## Users
+
+```bash
+appstore users list
+appstore users invite ada@example.com --first-name Ada --last-name Lovelace --roles DEVELOPER,APP_MANAGER [--apps 123,456] --confirm
+appstore users set-roles USER_ID --roles MARKETING --confirm
+appstore users remove USER_ID --confirm
+appstore users invitations
+appstore users cancel-invitation INVITATION_ID --confirm
+```
+
+## Bundle IDs
+
+```bash
+appstore bundle-ids list [--identifier com.example.app]
+appstore bundle-ids create com.example.app --name "Example" [--platform IOS] --confirm
+appstore bundle-ids capabilities BUNDLE_ID_RESOURCE_ID
+```
+
+## Devices
+
+```bash
+appstore devices list [--platform IOS]
+appstore devices register "Ada's iPhone" 00008110-000A1B2C3D4E5F67 --confirm
+appstore devices disable DEVICE_ID --confirm
+appstore devices enable DEVICE_ID --confirm
+```
+
+## Certificates and profiles
+
+```bash
+appstore certificates [--type DISTRIBUTION]
+appstore profiles list [--type IOS_APP_STORE] [--state ACTIVE]
+appstore profiles create "App Store Profile" --type IOS_APP_STORE --bundle-id BUNDLE_ID_RESOURCE_ID --certificates CERT_ID --confirm
+appstore profiles download PROFILE_ID -o ./AppStore.mobileprovision
+appstore profiles delete PROFILE_ID --confirm
+```
+
+`--bundle-id` on `profiles create` is the bundle ID resource id from `bundle-ids list`, not the identifier string.

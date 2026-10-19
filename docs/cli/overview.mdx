@@ -1,0 +1,39 @@
+---
+title: CLI overview
+description: The appstore command, its groups, and output modes.
+---
+
+```bash
+npm install -g @appeeky/app-store-connect-cli
+appstore --help
+appstore <group> --help
+```
+
+| Group | Commands |
+|-------|----------|
+| Setup | `whoami`, `accounts`, `install-skills`, `spec` |
+| Discovery | `search`, `capabilities`, `ops list / describe / call`, `api` |
+| Apps | `apps list / get / find / infos / localizations / set-localization / categories / set-categories / age-rating / availability / register / unregister / registered` |
+| Versions | `versions list / get / create / update / delete / localizations / set-localization / attach-build / detach-build / review-details / set-review-details` |
+| Review & release | `submit`, `submissions …`, `release`, `phased-release get / start / pause / resume / complete / delete` |
+| Builds | `builds list / get / latest / state / expire / encryption / what-to-test` |
+| TestFlight | `testflight groups …`, `testflight testers …`, `testflight submit / localizations / review-details` |
+| Reviews | `reviews list / get / respond / delete-response / summary` |
+| Media | `screenshots …`, `previews …` (`sets / create-set / list / upload / delete / reorder`) |
+| Monetization | `iap …`, `subscriptions …`, `pricing points / schedule` |
+| Team & signing | `users …`, `bundle-ids …`, `devices …`, `certificates`, `profiles …` |
+| Reports | `reports sales / finance`, `analytics requests / request / reports / instances / segments / download` |
+
+## Output
+
+Lists print as tables in a terminal. Add `--json` for the full App Store Connect response (JSON:API documents with `data`, `included`, `links`):
+
+```bash
+appstore --app com.example.app --json builds list --limit 3 | jq '.data[].attributes.version'
+```
+
+## Writes
+
+Every command that changes App Store Connect needs `--confirm`. Without it the command stops before any request is made.
+
+See [Global flags](/cli/global-flags).

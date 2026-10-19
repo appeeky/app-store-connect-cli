@@ -1,0 +1,43 @@
+---
+title: Contributing
+description: Develop and extend the monorepo.
+---
+
+## Setup
+
+```bash
+pnpm install
+pnpm build
+pnpm test
+pnpm typecheck
+pnpm lint
+```
+
+## Package layout
+
+- `packages/core`: `AppStoreConnectClient`, resources, `ASC_OPS`, generated types
+- `packages/cli`: `appstore` CLI (published package; bundles core and mcp)
+- `packages/mcp`: `appstore-mcp`
+- `packages/server`: hosted MCP + REST (deployed on Railway with `railway.json`)
+
+Add API coverage in **core** first, register it in the ops registry, then add CLI commands only where they make a common workflow shorter. MCP tools and the hosted API come from the registry.
+
+## OpenAPI types
+
+```bash
+pnpm generate:types                       # download Apple's current spec
+pnpm generate:types -- --spec ./spec.json # or use a local copy
+```
+
+Commit `packages/core/src/generated/*` with the spec version in the message.
+
+## Tests
+
+Tests use a scripted `fetch` (`packages/core/src/test-utils.ts`) and a throwaway P-256 key. They never call Apple. Do not commit `.p8` files; `.gitignore` blocks them.
+
+## Docs
+
+```bash
+pnpm build && pnpm docs:ops   # refresh docs/reference/operations.mdx
+cd docs && npx mintlify dev
+```
