@@ -3,12 +3,17 @@ title: MCP tools
 description: How MCP tools map to the operations registry, with examples.
 ---
 
-Every entry in `ASC_OPS` is a tool with the same name and argument schema. Discovery:
+Every curated operation in `ASC_OPS` is a tool with the same name and argument schema. The 1,303 [generated API operations](/concepts/full-api-coverage) (one per endpoint in Apple's OpenAPI spec) are not registered one by one; three tools reach them instead:
 
 | Tool | Description |
 |------|-------------|
-| `appstore_search_capabilities` | Search operations by keyword |
-| `appstore_list_capabilities` | List every operation |
+| `appstore_search_operations` | Search generated and curated operations by words (`query`), `group`, `method`; returns name, method, path, write and parameter names (`limit`, default 20) |
+| `appstore_describe_operation` | Full parameters of one operation (types, enums, maximums, pagination) and its JSON:API request body: required attributes and relationships with types, plus an example |
+| `appstore_call_operation` | Run any operation by `name` with `args` (and `account` on `appstore-mcp`) |
+| `appstore_search_capabilities` | Search the curated tools by keyword |
+| `appstore_list_capabilities` | List the curated tools |
+
+`appstore_call_operation` validates arguments before any request, refuses writes in read-only mode, and on the hosted server follows the same rules as the REST API (writes only with `X-ASC-Allow-Writes: true`, CLI-only operations refused).
 
 ## Examples
 
@@ -42,7 +47,43 @@ Every entry in `ASC_OPS` is a tool with the same name and argument schema. Disco
 }
 ```
 
-**Anything else**
+**Any endpoint, by name**
+
+```json
+{ "name": "appstore_search_operations", "arguments": { "query": "app clips", "method": "GET" } }
+```
+
+```json
+{
+  "name": "appstore_call_operation",
+  "arguments": {
+    "name": "appstore_api_apps_app_clips_get_to_many_related",
+    "args": { "id": "1234567890", "fields": { "appClips": ["bundleId"] }, "limit": 10 }
+  }
+}
+```
+
+**Create something (write)**
+
+```json
+{
+  "name": "appstore_call_operation",
+  "arguments": {
+    "name": "appstore_api_beta_groups_create_instance",
+    "args": {
+      "body": {
+        "data": {
+          "type": "betaGroups",
+          "attributes": { "name": "QA" },
+          "relationships": { "app": { "data": { "type": "apps", "id": "1234567890" } } }
+        }
+      }
+    }
+  }
+}
+```
+
+**Raw request**
 
 ```json
 {
@@ -53,4 +94,4 @@ Every entry in `ASC_OPS` is a tool with the same name and argument schema. Disco
 
 With `appstore-mcp`, tools also take `account` to pick a key from the config. If the `appId` is registered under exactly one account, it is picked automatically.
 
-CLI equivalent: `appstore ops call <tool> '<json>'`. Full catalog: [Operations reference](/reference/operations).
+CLI equivalents: `appstore ops call <tool> '<json>'` and `appstore api call <name> --param k=v`. Catalogs: [Operations reference](/reference/operations) (curated) and [API operations reference](/reference/api-operations) (generated).

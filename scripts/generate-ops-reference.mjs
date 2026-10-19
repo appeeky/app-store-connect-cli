@@ -1,8 +1,9 @@
 /**
- * Regenerate docs/reference/operations.mdx from the ops registry.
+ * Regenerate docs/reference/operations.mdx from the curated ops registry.
  * Run after `pnpm build`: pnpm docs:ops
+ * With --check, fail instead of writing when the committed page is stale.
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ASC_OPS } from "../packages/core/dist/index.js";
@@ -58,5 +59,14 @@ for (const [group, ops] of groups) {
   }
 }
 
-writeFileSync(join(root, "docs/reference/operations.mdx"), out);
-console.log(`Wrote docs/reference/operations.mdx (${ASC_OPS.length} operations)`);
+const target = join(root, "docs/reference/operations.mdx");
+if (process.argv.includes("--check")) {
+  if (readFileSync(target, "utf8") !== out) {
+    console.error("docs/reference/operations.mdx is out of date. Run: pnpm build && pnpm docs:ops");
+    process.exit(1);
+  }
+  console.log("docs/reference/operations.mdx is up to date");
+} else {
+  writeFileSync(target, out);
+  console.log(`Wrote docs/reference/operations.mdx (${ASC_OPS.length} operations)`);
+}

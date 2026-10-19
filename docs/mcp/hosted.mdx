@@ -37,7 +37,7 @@ Operations that change App Store Connect (versions, submissions, TestFlight, rev
 "X-ASC-Allow-Writes": "true"
 ```
 
-`appstore_request` stays available without it, for `GET` only.
+`appstore_request` stays available without it, for `GET` only. The same rule applies to the [generated API operations](/concepts/full-api-coverage) behind `appstore_search_operations` and `appstore_call_operation`: without the header only `GET` operations are listed and callable.
 
 Uploading screenshots or previews and downloading profiles needs local files, so those stay in the [CLI](/cli/overview). Local account management is not offered either; the account is the one connected in Appeeky.
 
@@ -46,7 +46,9 @@ Uploading screenshots or previews and downloading profiles needs local files, so
 | Method | Path | |
 | ------ | ---- | - |
 | `GET` | `/v1/apps` | Apps the connected key can see |
-| `GET` | `/v1/ops` | Operations you can run |
+| `GET` | `/v1/ops` | Operations you can run: curated and generated (`kind`, `method`, `path`, `write`) |
+| `GET` | `/v1/ops?q=…` | Search them; also `group`, `method`, `kind` (`curated` or `api`) and `limit` (default 50 with `q`) |
+| `GET` | `/v1/ops/{name}` | Parameters and request body of one operation |
 | `POST` | `/v1/ops/{name}` | Run one operation; the JSON body holds its arguments |
 | `GET` | `/health` | Liveness |
 
@@ -60,6 +62,13 @@ curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_list_builds \
   -H "Content-Type: application/json" \
   -d '{"appId":"1234567890","limit":5}'
 
+curl "https://asc-api.appeeky.com/v1/ops?q=app%20clips&method=GET" -H "Authorization: Bearer $APPEEKY_API_KEY"
+
+curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_api_apps_app_clips_get_to_many_related \
+  -H "Authorization: Bearer $APPEEKY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"1234567890","limit":10}'
+
 curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_respond_to_review \
   -H "Authorization: Bearer $APPEEKY_API_KEY" \
   -H "X-ASC-Allow-Writes: true" \
@@ -72,10 +81,11 @@ curl -X POST https://asc-api.appeeky.com/v1/ops/appstore_respond_to_review \
 | 401 | `MISSING_API_KEY` | No Appeeky key on the request |
 | 400 | `INVALID_ARGS` | Arguments failed validation (see `details`) |
 | 403 | `WRITES_DISABLED` | A write without `X-ASC-Allow-Writes: true` |
-| 404 | `UNKNOWN_OPERATION` | Unknown or CLI-only operation |
+| 404 | `UNKNOWN_OPERATION` | Unknown operation |
+| 404 | `CLI_ONLY` | The operation reads or writes local files or config; use the CLI |
 | 413 | `BODY_TOO_LARGE` | Body over 1 MB |
 | 502 | `APP_STORE_CONNECT_ERROR` | Apple refused the call; the message carries Apple's errors |
 
 Refusals from Appeeky (invalid key, no App Store Connect connection, credits used up) come back with Appeeky's status and code.
 
-Operation names and arguments match the [operations reference](/reference/operations).
+Arguments are validated before the Appeeky session is opened, so a rejected call costs no credits. Operation names and arguments match the [operations reference](/reference/operations) and the [API operations reference](/reference/api-operations).

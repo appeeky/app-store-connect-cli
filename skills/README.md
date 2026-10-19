@@ -27,7 +27,7 @@ Each skill is a folder with a `SKILL.md`; copying folders by hand works too.
 | [`appstore-auth`](./appstore-auth/SKILL.md) | API keys, env vars, Individual keys, read-only |
 | [`appstore-accounts`](./appstore-accounts/SKILL.md) | Several keys and default apps |
 | [`appstore-mcp`](./appstore-mcp/SKILL.md) | Local and hosted MCP |
-| [`appstore-ops`](./appstore-ops/SKILL.md) | Registry, `ops call`, raw `api` |
+| [`appstore-ops`](./appstore-ops/SKILL.md) | Registry, `ops call`, every endpoint via `api list/describe/call`, raw requests |
 | [`appstore-release`](./appstore-release/SKILL.md) | Versions, metadata, submit, release |
 | [`appstore-testflight`](./appstore-testflight/SKILL.md) | Builds, groups, testers, beta review |
 | [`appstore-reviews`](./appstore-reviews/SKILL.md) | Review summary and responses |

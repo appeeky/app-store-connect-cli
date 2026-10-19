@@ -36,4 +36,4 @@ Read-only unless the header `X-ASC-Allow-Writes: true` is added. No uploads or p
 1. `appstore_list_apps` or `appstore_find_app` to get the numeric `appId`.
 2. `appstore_search_capabilities` with a keyword to find the right tool.
 3. Read before writing; ask the user before any write tool.
-4. `appstore_request` covers endpoints without a dedicated tool.
+4. Endpoints without a dedicated tool: `appstore_search_operations` → `appstore_describe_operation` → `appstore_call_operation` (every endpoint in Apple's spec), or `appstore_request` for a raw path.

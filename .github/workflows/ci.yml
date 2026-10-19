@@ -17,6 +17,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # Offline: generated reference pages match the committed tables (no spec download in CI).
+      - run: pnpm check:generated
       - run: pnpm test
       - run: pnpm typecheck
       - run: pnpm lint

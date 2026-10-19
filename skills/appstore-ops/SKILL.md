@@ -1,9 +1,10 @@
 ---
 name: appstore-ops
 description: >-
-  Run any App Store Connect operation through the registry (appstore ops
-  call, MCP tool names) or a raw endpoint (appstore api / appstore_request).
-  Use when no dedicated command exists.
+  Run any App Store Connect operation: curated ops (appstore ops call, MCP
+  tool names), the generated operation for every API endpoint (appstore api
+  list/describe/call, appstore_search_operations / appstore_call_operation),
+  or a raw request. Use when no dedicated command exists.
 ---
 
 # Operations registry
@@ -17,6 +18,23 @@ appstore ops call appstore_update_subscription '{"subscriptionId":"…","reviewN
 ```
 
 List ops accept `limit` (≤200), `all: true`, `maxItems`.
+
+## Every endpoint, by name
+
+One generated operation per endpoint in Apple's OpenAPI spec, named `appstore_api_<snake_case operationId>`:
+
+```bash
+appstore api list --search "custom product pages"
+appstore api describe appstore_api_app_custom_product_pages_create_instance
+appstore api call appstore_api_apps_app_custom_product_pages_get_to_many_related --param id=1234567890 --param limit=20
+appstore api call appstore_api_beta_groups_create_instance --body @group.json --confirm
+```
+
+- Query params by Apple's names (`filter[platform]=IOS`, `fields[apps]=name`, `include=builds`) or grouped (`{"filter":{"platform":"IOS"}}`).
+- `describe` shows required body attributes/relationships and an example body.
+- `--all` follows pagination (capped at 1,000 items unless `--max-items`).
+
+MCP: `appstore_search_operations` → `appstore_describe_operation` → `appstore_call_operation` with `{"name": …, "args": {…}}`.
 
 ## Raw endpoints
 

@@ -28,7 +28,7 @@ One authenticated client, three ways in:
 - Team members and invitations
 - Bundle IDs, devices, certificates and provisioning profiles
 - Sales and Trends, finance and analytics reports as JSON rows
-- `appstore api` / `appstore_request` for any other endpoint
+- Every other endpoint in Apple's OpenAPI spec (1,303 operations) as named, validated operations: `appstore api list / describe / call`, or `appstore_search_operations` / `appstore_call_operation` over MCP
 
 ## Components
 
@@ -36,7 +36,7 @@ One authenticated client, three ways in:
 |---------|-------------|-------------|
 | `@appeeky/app-store-connect-cli` | `appstore`, `appstore-mcp` | Published npm package |
 
-The CLI, the MCP server and the hosted API share one operation registry (168 operations), so tool names and arguments match everywhere.
+The CLI, the MCP server and the hosted API share one operation registry (168 curated operations plus 1,303 generated from Apple's spec), so names and arguments match everywhere.
 
 ## Next steps
 

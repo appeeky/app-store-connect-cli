@@ -1,0 +1,107 @@
+---
+title: Full API coverage
+description: Every App Store Connect API endpoint as a named, typed operation generated from Apple's OpenAPI spec.
+---
+
+Besides the 168 curated operations, every operation in Apple's App Store Connect OpenAPI spec is available as a **generated operation**: one per path and method, **1,303** in spec 4.5.1 (GET 826, POST 180, PATCH 162, DELETE 135). Xcode Cloud, Game Center, App Clips, custom product pages, in-app events, offer codes, price schedules, webhooks, background assets and everything else in the spec is reachable by name, with validated arguments.
+
+| | Curated (`ASC_OPS`) | Generated (`API_OPS`) |
+|-|---------------------|-----------------------|
+| Count | 168 | 1,303 (one per spec operation) |
+| Names | `appstore_list_builds` | `appstore_api_<operationId in snake_case>` |
+| Arguments | Friendly (`appId`, `platform`, `rating`…) | Apple's own: path `id`, query `filter[…]`, `fields[…]`, `include`, `sort`, `limit`, JSON:API `body` |
+| MCP | One tool each | Through `appstore_search_operations`, `appstore_describe_operation`, `appstore_call_operation` |
+| CLI | Dedicated commands, `appstore ops call` | `appstore api list / describe / call` (and `appstore ops call`) |
+
+Use a curated operation when one exists: it hides JSON:API and resolves bundle ids. Use a generated one for everything else.
+
+## Names
+
+`appstore_api_` + the snake_case `operationId` from Apple's spec:
+
+| Apple operationId | Operation | Endpoint |
+|-------------------|-----------|----------|
+| `apps_getCollection` | `appstore_api_apps_get_collection` | `GET /v1/apps` |
+| `apps_appStoreVersions_getToManyRelated` | `appstore_api_apps_app_store_versions_get_to_many_related` | `GET /v1/apps/{id}/appStoreVersions` |
+| `betaGroups_betaTesters_createToManyRelationship` | `appstore_api_beta_groups_beta_testers_create_to_many_relationship` | `POST /v1/betaGroups/{id}/relationships/betaTesters` |
+| `appPricePointsV3_equalizations_getToManyRelated` | `appstore_api_app_price_points_v3_equalizations_get_to_many_related` | `GET /v3/appPricePoints/{id}/equalizations` |
+
+The group is the first path segment (`apps`, `betaGroups`, `ciProducts`…). Anything but `GET` is a write. The full list is in the [API operations reference](/reference/api-operations).
+
+## Find, read, call
+
+<Steps>
+  <Step title="Search">
+    ```bash
+    appstore api list --search "app store version localizations"
+    appstore api list --group betaGroups --method POST
+    ```
+    MCP: `appstore_search_operations` with `query`, `group`, `method`, `limit`. Every word must match the name, path, group or summary (common words like *testflight* or *iap* map to Apple's names).
+  </Step>
+  <Step title="Describe">
+    ```bash
+    appstore api describe appstore_api_app_store_versions_create_instance
+    ```
+    MCP: `appstore_describe_operation`. Returns every path and query parameter with its type, enum values and maximum, whether `all` pagination applies, and for writes the request body: schema name, resource type, attributes and relationships (required ones flagged, with types and enums) and a minimal example body.
+  </Step>
+  <Step title="Call">
+    ```bash
+    appstore api call appstore_api_apps_app_store_versions_get_to_many_related \
+      --param id=1234567890 --param filter[platform]=IOS --param limit=5
+    ```
+    MCP: `appstore_call_operation` with `name` and `args`.
+  </Step>
+</Steps>
+
+## Arguments
+
+| Kind | How to pass it |
+|------|----------------|
+| Path | By name: `{"id": "1234567890"}`. Must be one segment: `/`, `\`, `..`, `?`, `#` and control characters are rejected, the rest is URL-encoded. |
+| Query | Apple's bracket names: `{"filter[platform]": "IOS", "fields[apps]": ["name", "bundleId"], "include": "builds", "limit": 50}` |
+| Query, grouped | Same thing as objects: `{"filter": {"platform": "IOS"}, "fields": {"apps": ["name"]}, "exists": {"…": true}}`. `limit[…]` (included-relationship limits) only takes the bracket form. |
+| Lists | Arrays or comma-separated strings: `["IOS","MAC_OS"]` or `"IOS,MAC_OS"`. On the CLI, repeat `--param` or use commas. |
+| Body | `body`: the JSON:API document, sent as given. `data.type` is filled in when missing, and for updates `data.id` defaults to the path `id`. |
+| Pagination | `all: true` on GET collections follows `links.next`, up to `maxItems` (default 1,000, max 20,000) and 100 pages. The result is `{ data, included, meta: { total, pages, truncated } }`. |
+
+Arguments are validated before any request: enum values, required parameters (for example `filter[app]` on `reviewSubmissions`), page-size maximums, unknown names (with the list of valid ones) and the body's resource type. Responses that are not JSON (sales and finance reports, CSV exports) come back as text.
+
+## Writes and read-only mode
+
+- CLI: writes need `--confirm`; `--read-only` refuses them.
+- `appstore-mcp --read-only`: `appstore_call_operation` refuses writes before any request.
+- Hosted: generated writes are listed and callable only with `X-ASC-Allow-Writes: true`, like curated ones. CLI-only operations (local files, local accounts) are refused with `CLI_ONLY`.
+
+## SDK
+
+```ts
+import { ClientRegistry, describeOperation, invokeOp, searchOperations } from "@appeeky/app-store-connect-core";
+
+const hits = searchOperations("in-app purchase localizations", { method: "POST", limit: 5 });
+const info = describeOperation(hits[0].name); // params, body schema, example
+const client = ClientRegistry.load().getClient();
+const versions = await invokeOp(client, "appstore_api_apps_app_store_versions_get_to_many_related", {
+  id: "1234567890",
+  filter: { platform: "IOS" },
+  all: true,
+});
+```
+
+`API_OPS` holds the generated ops and `ALL_OPS` curated plus generated. Each generated op has `api: { operationId, method, path, deprecated }`.
+
+## Regenerating when Apple ships a new spec
+
+```bash
+pnpm generate:types   # downloads Apple's spec, regenerates the OpenAPI types
+pnpm generate:ops     # regenerates the operation table and docs/reference/api-operations.mdx
+pnpm build && pnpm test && pnpm docs:ops
+```
+
+`generate:ops` reads the spec cached by `generate:types` in `packages/core/.spec/` (git-ignored), downloads it if missing, or takes `--spec ./openapi.json` / `--download`. It writes:
+
+- `packages/core/src/generated/operations.ts`: a compact table (pooled enums, query parameters and body summaries referenced by index; zod schemas are built lazily per operation)
+- `docs/reference/api-operations.mdx`
+
+Commit both with the regenerated types. The raw spec (about 7.5 MB) is not committed. CI runs `pnpm check:generated` offline: the reference page must match the table, and the core tests check that the table has exactly one operation per path and method in the committed OpenAPI types.
+
+Operation descriptions: Apple's spec has no summaries, so each summary is derived from the operationId (for example *List the beta groups of an app*). If a future spec adds summaries, they are used instead.

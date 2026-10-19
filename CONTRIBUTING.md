@@ -23,9 +23,9 @@ pnpm lint
 
 Add API coverage in **core** first, register it in the ops registry (`packages/core/src/ops/`), then add CLI commands only where they shorten a common workflow. MCP tools and the hosted API come from the registry. Refresh the docs table with `pnpm build && pnpm docs:ops`.
 
-## OpenAPI types
+## OpenAPI types and generated operations
 
-`pnpm generate:types` downloads Apple's App Store Connect OpenAPI spec and regenerates `packages/core/src/generated/`. Commit the result and mention the spec version.
+`pnpm generate:types` downloads Apple's App Store Connect OpenAPI spec and regenerates the types in `packages/core/src/generated/`. Then `pnpm generate:ops` regenerates `packages/core/src/generated/operations.ts` (one operation per path + method) and `docs/reference/api-operations.mdx` from the same spec (cached in `packages/core/.spec/`, not committed). Commit the results and mention the spec version. `pnpm check:generated` (run in CI after `pnpm build`) checks the reference pages against the committed tables without network.
 
 ## Agent skills
 

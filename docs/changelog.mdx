@@ -3,6 +3,15 @@ title: Changelog
 description: Release notes for the App Store Connect CLI, MCP and SDK.
 ---
 
+## Unreleased
+
+- Full App Store Connect API coverage: one generated operation per path and method in Apple's OpenAPI spec 4.5.1 (1,303), named `appstore_api_<operationId>`, with validated path and query parameters, JSON:API bodies and capped `all` pagination
+- `pnpm generate:ops` builds the compact operation table and the [API operations reference](/reference/api-operations) from the spec
+- Search and describe every operation: `searchOperations` and `describeOperation` in the SDK, including request body schemas (required attributes and relationships, example body)
+- MCP: `appstore_search_operations`, `appstore_describe_operation`, `appstore_call_operation` (local and hosted), with the hosted write gate and CLI-only refusals
+- Hosted REST: `/v1/ops` lists generated ops too, `?q=` search, `GET /v1/ops/{name}` describes one; arguments are validated before the session is opened; CLI-only ops return `CLI_ONLY`
+- CLI: `appstore api list`, `appstore api describe`, `appstore api call`; the raw form is `appstore api request` (`appstore api GET …` still works)
+
 ## 0.1.0
 
 - First release of `appstore`, `appstore-mcp`, the core SDK and the hosted server

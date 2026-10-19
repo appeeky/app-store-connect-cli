@@ -1,6 +1,6 @@
 ---
 title: Discovery
-description: whoami, search, capabilities, ops, and the raw api command.
+description: whoami, search, capabilities, ops, and api (every endpoint by name, or a raw request).
 ---
 
 ## whoami
@@ -29,7 +29,29 @@ appstore ops describe appstore_create_version
 
 ## api
 
-For anything without a dedicated operation:
+Every App Store Connect API operation, generated from Apple's OpenAPI spec (see [Full API coverage](/concepts/full-api-coverage)):
+
+```bash
+appstore api list --search "custom product pages"          # search names, paths, summaries
+appstore api list --group betaGroups --method POST         # filter by resource group and method
+appstore api list --generated --json                        # every generated op as JSON
+appstore api describe appstore_api_beta_groups_create_instance
+appstore api call appstore_api_apps_app_clips_get_to_many_related --param id=1234567890 --param limit=10
+appstore api call appstore_api_apps_get_collection --param filter[bundleId]=com.example.app --all --max-items 500
+appstore api call appstore_api_beta_groups_create_instance --body @group.json --confirm
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-p, --param key=value` | Repeatable. Path (`id=…`) and query parameters by Apple's name (`filter[platform]=IOS`, `fields[apps]=name,bundleId`, `include=builds`, `limit=50`). Repeating a key builds a list. |
+| `-b, --body` | JSON:API body, inline or `@file.json` |
+| `--all`, `--max-items` | GET collections: follow pagination (default cap 1,000 items) |
+
+`api list` and `api describe` print tables, or JSON with `--json`; `api call` always prints JSON. Generated operation names also work with `appstore ops describe` and `appstore ops call`.
+
+### Raw requests
+
+For a path you already know (`appstore api request …`; `request` can be left out):
 
 ```bash
 appstore api GET /v1/apps/1234567890/appClips

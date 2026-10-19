@@ -18,14 +18,14 @@ App Store Connect API operations for:
 - Users and invitations
 - Bundle IDs, capabilities, devices, certificates, provisioning profiles
 - Sales and Trends, finance and analytics reports
-- Any other endpoint through `appstore api` / `appstore_request`
+- Every other endpoint in Apple's OpenAPI spec as a named, validated [generated operation](/concepts/full-api-coverage) (`appstore api call`, `appstore_call_operation`), or a raw request with `appstore api GET …` / `appstore_request`
 
 ## Not included (yet)
 
 | Area | Notes |
 |------|-------|
-| Uploading binaries (`.ipa`, `.pkg`) | Use Xcode, `xcrun altool` or Transporter; the API's build upload flow is not wrapped yet |
-| Xcode Cloud, Game Center, App Clips, custom product pages, in-app events, offer codes | Reachable through `appstore_request` |
-| Setting prices and price schedules | Read helpers exist; writes go through `appstore_request` for now |
+| Uploading binaries (`.ipa`, `.pkg`) | Use Xcode, `xcrun altool` or Transporter; the build upload endpoints exist as generated operations, but the file upload itself is not wrapped |
+| Curated commands for Xcode Cloud, Game Center, App Clips, custom product pages, in-app events, offer codes | Every endpoint is available as a [generated operation](/reference/api-operations) |
+| Curated price schedule writes | Use the generated price schedule operations (for example `appstore_api_app_price_schedules_create_instance`) |
 | Creating certificates (CSR signing) | List and read only |
 | Notarization, App Store Server API, StoreKit | Different Apple APIs |

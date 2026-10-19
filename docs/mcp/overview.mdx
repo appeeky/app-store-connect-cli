@@ -13,10 +13,10 @@ Two ways to connect an agent:
 | Uploads / profile downloads | Yes (local files) | No |
 | Multi-account | `account` argument | The account connected in Appeeky |
 
-Every operation in the [registry](/reference/operations) is a tool with the same name and arguments as `appstore ops call`. Two helpers find the right one:
+Every curated operation in the [registry](/reference/operations) is a tool with the same name and arguments as `appstore ops call`. The rest of the API, every endpoint in Apple's OpenAPI spec, is one search away:
 
-- `appstore_search_capabilities`
-- `appstore_list_capabilities`
+- `appstore_search_operations`, `appstore_describe_operation`, `appstore_call_operation` ([full API coverage](/concepts/full-api-coverage))
+- `appstore_search_capabilities`, `appstore_list_capabilities` (curated tools)
 
 Agents can then:
 

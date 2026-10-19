@@ -64,6 +64,7 @@
         "group": "Concepts",
         "pages": [
           "concepts/ops-registry",
+          "concepts/full-api-coverage",
           "concepts/ids-and-resources",
           "concepts/read-only",
           "concepts/errors"
@@ -109,6 +110,7 @@
         "group": "Reference",
         "pages": [
           "reference/operations",
+          "reference/api-operations",
           "reference/scope",
           "changelog",
           "contributing"

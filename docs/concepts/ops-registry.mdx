@@ -3,7 +3,7 @@ title: Ops registry
 description: ASC_OPS, one registry for MCP tools, appstore ops and the hosted API.
 ---
 
-`ASC_OPS` is the catalog of every operation.
+`ASC_OPS` is the catalog of curated operations. `API_OPS` adds one generated operation per endpoint in Apple's OpenAPI spec (see [Full API coverage](/concepts/full-api-coverage)); `ALL_OPS` is both. Generated and curated ops share the same interface.
 
 | Field | Meaning |
 |-------|---------|
@@ -14,17 +14,18 @@ description: ASC_OPS, one registry for MCP tools, appstore ops and the hosted AP
 | `isWrite` | Optional per-call check; `appstore_request` is only a write when the method is not `GET` |
 | `shape` | Zod schema of the arguments |
 | `run` | `(client, args) => Promise` |
+| `api` | Generated ops only: `{ operationId, method, path, deprecated }` |
 
 ## Surfaces
 
 | Surface | How |
 |---------|-----|
-| MCP (local) | `appstore-mcp` registers every op plus `appstore_search_capabilities` and `appstore_list_capabilities` |
+| MCP (local) | `appstore-mcp` registers every curated op, `appstore_search_capabilities`, `appstore_list_capabilities`, and `appstore_search_operations` / `appstore_describe_operation` / `appstore_call_operation` for all ops |
 | MCP (hosted) | Same tools, minus local-file and local-config ops |
-| CLI discovery | `appstore ops list [query]`, `appstore ops describe <name>`, `appstore search`, `appstore capabilities` |
-| CLI invoke | `appstore ops call <name> '<json>'` |
-| REST | `POST https://asc-api.appeeky.com/v1/ops/<name>` |
-| SDK | `listOps`, `getOp`, `invokeOp` from `@appeeky/app-store-connect-core` |
+| CLI discovery | `appstore ops list [query]`, `appstore ops describe <name>`, `appstore api list`, `appstore api describe <name>`, `appstore search`, `appstore capabilities` |
+| CLI invoke | `appstore ops call <name> '<json>'`, `appstore api call <name> --param k=v` |
+| REST | `GET https://asc-api.appeeky.com/v1/ops?q=…`, `POST https://asc-api.appeeky.com/v1/ops/<name>` |
+| SDK | `listOps`, `getOp`, `invokeOp`, `searchOperations`, `describeOperation` from `@appeeky/app-store-connect-core` |
 
 ## Example
 
@@ -36,4 +37,4 @@ appstore ops call appstore_list_customer_reviews '{"appId":"1234567890","rating"
 
 List operations take `limit` (page size, max 200), `all` (follow `links.next`) and `maxItems` (stop early).
 
-Full list: [Operations reference](/reference/operations).
+Full lists: [Operations reference](/reference/operations) (curated) and [API operations reference](/reference/api-operations) (generated).

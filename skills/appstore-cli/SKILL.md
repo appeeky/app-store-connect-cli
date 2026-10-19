@@ -40,6 +40,8 @@ appstore search phased
 appstore ops list subscriptions
 appstore ops describe appstore_create_version
 appstore ops call appstore_list_builds '{"appId":"1234567890","limit":5}'
+appstore api list --search "app clips"
+appstore api call appstore_api_apps_app_clips_get_to_many_related --param id=1234567890
 appstore api GET /v1/apps/1234567890/appClips
 ```
 

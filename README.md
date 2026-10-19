@@ -16,6 +16,7 @@ Ship iOS, macOS, tvOS and visionOS apps from your terminal, CI or AI agent: vers
 - [Quick start](#quick-start)
 - [Multi-account](#multi-account)
 - [Common workflows](#common-workflows)
+- [Full API coverage](#full-api-coverage)
 - [MCP](#mcp)
 - [Agent skills](#agent-skills)
 - [SDK](#sdk)
@@ -138,13 +139,31 @@ appstore reports sales --date 2026-10-18 --vendor 85012345
 appstore reports finance --date 2026-09 --region ZZ
 ```
 
-### Full API surface
+### Curated operations
 
 ```bash
 appstore ops list subscriptions
 appstore ops call appstore_list_subscription_groups '{"appId":"1234567890"}'
-appstore api GET /v1/apps/1234567890/appClips
 ```
+
+## Full API coverage
+
+Every operation in Apple's App Store Connect OpenAPI spec (4.5.1: **1,303** operations) is available as a named, validated operation generated from the spec: `appstore_api_` + the snake_case operationId, e.g. `apps_getCollection` → `appstore_api_apps_get_collection`.
+
+```bash
+appstore api list --search "app clips"                       # search names, paths, summaries
+appstore api describe appstore_api_beta_groups_create_instance   # params, enums, body schema + example
+appstore api call appstore_api_apps_app_clips_get_to_many_related --param id=1234567890 --param limit=10
+appstore api call appstore_api_apps_get_collection --param filter[bundleId]=com.example.app --all
+appstore api call appstore_api_beta_groups_create_instance --body @group.json --confirm
+appstore api GET /v1/apps/1234567890/appClips                # raw request
+```
+
+Query parameters use Apple's names (`filter[platform]`, `fields[apps]`, `include`, `sort`, `limit`) or a grouped object (`{"filter": {"platform": "IOS"}}`). Path ids are checked to be a single segment, writes need `--confirm`, and `--all` pagination is capped.
+
+MCP does not register 1,300 tools: agents use `appstore_search_operations`, `appstore_describe_operation` and `appstore_call_operation` (local and hosted; hosted writes still need `X-ASC-Allow-Writes: true`). Hosted REST: `GET /v1/ops?q=…`, `GET /v1/ops/<name>`, `POST /v1/ops/<name>`.
+
+When Apple ships a new spec: `pnpm generate:types && pnpm generate:ops`, then commit. Details: [docs/concepts/full-api-coverage.mdx](./docs/concepts/full-api-coverage.mdx), reference: [docs/reference/api-operations.mdx](./docs/reference/api-operations.mdx).
 
 ## MCP
 
@@ -222,7 +241,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-Regenerate the OpenAPI types with `pnpm generate:types` and the operations reference with `pnpm docs:ops`.
+Regenerate the OpenAPI types with `pnpm generate:types`, the generated operations with `pnpm generate:ops`, and the curated operations reference with `pnpm docs:ops`. `pnpm check:generated` verifies the reference pages offline.
 
 ## Contributing
 
