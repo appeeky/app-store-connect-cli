@@ -4,7 +4,8 @@ export function printJson(value: unknown): void {
   console.log(JSON.stringify(value ?? { ok: true }, null, 2));
 }
 
-export function printTable(rows: Array<Record<string, unknown>>): void {
+export function printTable(rows: Array<Record<string, unknown>>, options: { maxWidth?: number } = {}): void {
+  const maxWidth = options.maxWidth ?? 60;
   if (rows.length === 0) {
     console.log("(empty)");
     return;
@@ -15,7 +16,7 @@ export function printTable(rows: Array<Record<string, unknown>>): void {
     const s = typeof v === "object" ? JSON.stringify(v) : String(v);
     return s.replace(/\s+/g, " ");
   };
-  const widths = keys.map((key) => Math.min(60, Math.max(key.length, ...rows.map((row) => cell(row[key]).length))));
+  const widths = keys.map((key) => Math.min(maxWidth, Math.max(key.length, ...rows.map((row) => cell(row[key]).length))));
   const line = (values: string[]) =>
     values
       .map((v, i) => {

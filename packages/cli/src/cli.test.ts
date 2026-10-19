@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ASC_OPS } from "@appeeky/app-store-connect-core";
-import { buildProgram } from "./cli.js";
+import { buildProgram, readJsonArg } from "./cli.js";
 
 async function run(args: string[]) {
   const program = buildProgram();
@@ -58,5 +61,59 @@ describe("appstore CLI", () => {
     const referenced = [...source.matchAll(/"(appstore_[a-z0-9_]+)"/g)].map((m) => m[1]!);
     const known = new Set(ASC_OPS.map((op) => op.name));
     for (const name of referenced) expect(known.has(name), name).toBe(true);
+  });
+
+  describe("api (generated operations)", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    function capture() {
+      const lines: string[] = [];
+      vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+        lines.push(args.map(String).join(" "));
+      });
+      return lines;
+    }
+
+    it("lists and searches operations as JSON", async () => {
+      const lines = capture();
+      await run(["--json", "api", "list", "--search", "beta groups", "--method", "POST", "--limit", "3"]);
+      const hits = JSON.parse(lines.join("\n")) as Array<{ name: string; method: string; write: boolean }>;
+      expect(hits).toHaveLength(3);
+      expect(hits.every((h) => h.method === "POST" && h.write)).toBe(true);
+    });
+
+    it("filters by group and describes an operation", async () => {
+      const lines = capture();
+      await run(["--json", "api", "list", "--group", "salesReports"]);
+      expect(JSON.parse(lines.join("\n"))).toMatchObject([{ name: "appstore_api_sales_reports_get_collection" }]);
+      lines.length = 0;
+      await run(["--json", "api", "describe", "appstore_api_beta_groups_create_instance"]);
+      expect(JSON.parse(lines.join("\n"))).toMatchObject({ method: "POST", body: { schema: "BetaGroupCreateRequest" } });
+      lines.length = 0;
+      await run(["api", "describe", "appstore_api_beta_groups_create_instance"]);
+      expect(lines.join("\n")).toContain("Example body:");
+    });
+
+    it("refuses writes without --confirm and bad ids before loading any key", async () => {
+      await expect(
+        run(["api", "call", "appstore_api_beta_groups_delete_instance", "--param", "id=g1"]),
+      ).rejects.toThrow(/without --confirm/);
+      await expect(run(["api", "call", "appstore_api_apps_get_instance", "--param", "id=../x"])).rejects.toThrow(
+        /Invalid path parameter/,
+      );
+      await expect(run(["api", "call", "appstore_api_apps_get_collection", "--param", "filter[nope]=1"])).rejects.toThrow(
+        /Unknown argument/,
+      );
+      await expect(run(["api", "call", "appstore_api_nope"])).rejects.toThrow(/Unknown operation/);
+    });
+
+    it("reads bodies inline or from @file", () => {
+      const dir = mkdtempSync(join(tmpdir(), "appstore-cli-"));
+      const file = join(dir, "body.json");
+      writeFileSync(file, '{"data":{"type":"betaGroups"}}');
+      expect(readJsonArg(`@${file}`, "--body")).toEqual({ data: { type: "betaGroups" } });
+      expect(readJsonArg('{"a":1}', "--body")).toEqual({ a: 1 });
+      expect(() => readJsonArg("{nope", "--body")).toThrow(/--body must be JSON/);
+    });
   });
 });

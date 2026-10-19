@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -11,6 +11,9 @@ import {
   getOp,
   invokeOp,
   opIsWrite,
+  validateOpArgs,
+  searchOperations,
+  describeOperation,
   loadConfig,
   saveConfig,
   defaultConfigPath,
@@ -55,6 +58,16 @@ const bool = (v: string) => {
   if (["false", "0", "no", "off"].includes(v.toLowerCase())) return false;
   throw new Error(`Expected true or false, got ${v}`);
 };
+
+/** Parse inline JSON, or read it from a file with @path. */
+export function readJsonArg(value: string, flag: string): unknown {
+  const text = value.startsWith("@") ? readFileSync(value.slice(1), "utf8") : value;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`${flag} must be JSON${value.startsWith("@") ? ` (in ${value.slice(1)})` : ""}`);
+  }
+}
 
 function resolveSkillsDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -362,13 +375,128 @@ export function buildProgram(): Command {
       printJson(await invokeOp(client, name, args));
     });
 
-  program
+  // ── Full API (generated operations) ──────────────────────────
+  const api = program
     .command("api")
-    .description("Call any App Store Connect endpoint, e.g. appstore api GET /v1/apps --query limit=5")
+    .description("Every App Store Connect API operation, generated from Apple's OpenAPI spec (list, describe, call), or a raw request");
+
+  api
+    .command("list")
+    .description("List or search operations (generated and curated)")
+    .option("-g, --group <group>", "Resource group (first path segment), e.g. apps, builds, betaGroups")
+    .option("-s, --search <query>", "Words matched against name, path, group and summary")
+    .option("-m, --method <method>", "GET, POST, PATCH or DELETE")
+    .option("--curated", "Only the curated ops")
+    .option("--generated", "Only the generated API ops")
+    .option("--limit <n>", "Max rows", num)
+    .action((o: { group?: string; search?: string; method?: string; curated?: boolean; generated?: boolean; limit?: number }) => {
+      const kind = o.curated ? "curated" : o.generated ? "api" : undefined;
+      const hits = searchOperations(o.search ?? "", { group: o.group, method: o.method, kind, limit: o.limit });
+      if (g().json) printJson(hits);
+      else {
+        printTable(
+          hits.map((h) => ({
+            name: h.name,
+            method: h.method ?? "",
+            path: h.path ?? `(curated: ${h.group})`,
+            write: h.write,
+          })),
+          { maxWidth: 140 },
+        );
+        console.log(`\n${hits.length} operation${hits.length === 1 ? "" : "s"}. Details: appstore api describe <name>`);
+      }
+    });
+
+  api
+    .command("describe")
+    .description("Show an operation's parameters and request body")
+    .argument("<name>", "Operation name, e.g. appstore_api_apps_get_collection")
+    .action((name: string) => {
+      const d = describeOperation(name);
+      if (g().json) {
+        printJson(d);
+        return;
+      }
+      console.log(`${d.name} (${d.write ? "write" : "read"}${d.deprecated ? ", deprecated" : ""})`);
+      if (d.method) console.log(`${d.method} ${d.path}`);
+      console.log(`${d.summary}\n`);
+      printTable(
+        d.params.map((p) => ({
+          param: p.name,
+          in: p.in,
+          type: p.type,
+          required: p.required,
+          values: p.enum ? p.enum.join(",") : p.maximum ? `max ${p.maximum}` : "",
+          description: p.description,
+        })),
+      );
+      if (d.groupedParams?.length) {
+        console.log(`\nGrouped form also accepted for: ${d.groupedParams.map((f) => `${f}[…]`).join(", ")} (e.g. --param filter[platform]=IOS)`);
+      }
+      if (d.body) {
+        console.log(`\nBody: ${d.body.schema} (${d.body.kind}, type ${d.body.resourceType})`);
+        if (d.body.attributes.length) {
+          printTable(
+            d.body.attributes.map((a) => ({
+              attribute: a.name,
+              type: a.type,
+              required: a.required,
+              values: a.enum?.join(",") ?? "",
+            })),
+          );
+        }
+        if (d.body.relationships.length) {
+          console.log("");
+          printTable(
+            d.body.relationships.map((r) => ({
+              relationship: r.name,
+              type: r.type,
+              toMany: r.toMany,
+              required: r.required,
+            })),
+          );
+        }
+        console.log(`\nExample body:\n${JSON.stringify(d.body.example, null, 2)}`);
+      }
+    });
+
+  api
+    .command("call")
+    .description("Call an operation by name, e.g. appstore api call appstore_api_apps_get_instance --param id=123")
+    .argument("<name>", "Operation name (appstore api list)")
+    .option("-p, --param <key=value...>", "Argument, repeatable: id=123, filter[platform]=IOS, limit=50, include=builds")
+    .option("-b, --body <jsonOrFile>", "JSON:API request body: inline JSON or @file.json")
+    .option("--all", "GET collections: follow pagination (capped)")
+    .option("--max-items <n>", "With --all: stop after this many items", num)
+    .action(async (name: string, o: { param?: string[]; body?: string; all?: boolean; maxItems?: number }) => {
+      const opts = g();
+      const op = getOp(name);
+      const args: Args = {};
+      for (const pair of o.param ?? []) {
+        const i = pair.indexOf("=");
+        if (i <= 0) throw new Error(`--param must be key=value, got ${pair}`);
+        const key = pair.slice(0, i);
+        const value = pair.slice(i + 1);
+        // Repeating a key builds a list: --param filter[platform]=IOS --param filter[platform]=MAC_OS
+        const prev = args[key];
+        args[key] = prev === undefined ? value : [...(Array.isArray(prev) ? prev : [prev]), value];
+      }
+      if (o.body !== undefined) args.body = readJsonArg(o.body, "--body");
+      if (o.all) args.all = true;
+      if (o.maxItems !== undefined) args.maxItems = o.maxItems;
+      if (opIsWrite(op, args)) requireConfirm(opts, op.name);
+      validateOpArgs(op, args);
+      const { client } = await clientFor(typeof args.appId === "string" ? args.appId : undefined);
+      printJson(await invokeOp(client, name, args));
+    });
+
+  api
+    .command("request", { isDefault: true })
+    .description("Raw request to any endpoint, e.g. appstore api GET /v1/apps --query limit=5")
     .argument("<method>", "GET, POST, PATCH or DELETE")
     .argument("<path>", "Path under /v1, /v2…")
     .option("-q, --query <key=value...>", "Query parameters")
-    .option("-d, --body <json>", "JSON request body")
+    .option("-d, --body <json>", "JSON request body (or @file.json)")
     .option("--all", "GET: follow pagination")
     .action(async (method: string, path: string, o: { query?: string[]; body?: string; all?: boolean }) => {
       const query: Record<string, string> = {};
@@ -377,14 +505,7 @@ export function buildProgram(): Command {
         if (i <= 0) throw new Error(`Query must be key=value, got ${pair}`);
         query[pair.slice(0, i)] = pair.slice(i + 1);
       }
-      let body: unknown;
-      if (o.body) {
-        try {
-          body = JSON.parse(o.body);
-        } catch {
-          throw new Error("--body must be JSON");
-        }
-      }
+      const body = o.body ? readJsonArg(o.body, "--body") : undefined;
       await call("appstore_request", { method: method.toUpperCase(), path, query, body, all: o.all });
     });
 
