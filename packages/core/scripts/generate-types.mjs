@@ -8,43 +8,24 @@
  * Output:
  *   src/generated/app-store-connect.ts  (openapi-typescript output, committed)
  *   src/generated/spec-version.ts       (spec version + source URL)
+ *
+ * Then run `pnpm generate:ops` to refresh the generated operation table.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { unzipSync, strFromU8 } from "fflate";
 import openapiTS, { astToString } from "openapi-typescript";
+import { CORE_ROOT, SPEC_URL, loadSpecText } from "./spec.mjs";
 
-export const SPEC_URL =
-  "https://developer.apple.com/sample-code/app-store-connect/app-store-connect-openapi-specification.zip";
+export { SPEC_URL };
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = join(root, "src/generated");
-const cacheDir = join(root, ".spec");
+const outDir = join(CORE_ROOT, "src/generated");
 
 const { values } = parseArgs({
   options: { spec: { type: "string" } },
 });
 
-async function loadSpecText() {
-  if (values.spec) return readFileSync(resolve(values.spec), "utf8");
-
-  console.log(`Downloading ${SPEC_URL}`);
-  const res = await fetch(SPEC_URL);
-  if (!res.ok) throw new Error(`Spec download failed: HTTP ${res.status}`);
-  const files = unzipSync(new Uint8Array(await res.arrayBuffer()));
-  const name = Object.keys(files).find(
-    (f) => f.endsWith(".json") && !f.startsWith("__MACOSX") && !f.includes("/._"),
-  );
-  if (!name) throw new Error("No JSON spec inside the downloaded archive");
-  const text = strFromU8(files[name]);
-  mkdirSync(cacheDir, { recursive: true });
-  writeFileSync(join(cacheDir, "openapi.oas.json"), text);
-  return text;
-}
-
-const specText = await loadSpecText();
+const { text: specText } = await loadSpecText({ spec: values.spec });
 const spec = JSON.parse(specText);
 const version = spec.info?.version ?? "unknown";
 const pathCount = Object.keys(spec.paths ?? {}).length;
@@ -69,3 +50,4 @@ export const ASC_SPEC_URL = ${JSON.stringify(SPEC_URL)};
 `,
 );
 console.log(`Generated types for App Store Connect API ${version} (${pathCount} paths)`);
+console.log("Next: pnpm generate:ops");

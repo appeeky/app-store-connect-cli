@@ -21,7 +21,8 @@
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --dir src",
-    "generate:types": "node ./scripts/generate-types.mjs"
+    "generate:types": "node ./scripts/generate-types.mjs",
+    "generate:ops": "node ./scripts/generate-ops.mjs"
   },
   "dependencies": {
     "zod": "^3.24.3"

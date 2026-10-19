@@ -17,9 +17,11 @@
     "lint": "eslint .",
     "typecheck": "pnpm -r run typecheck",
     "generate:types": "pnpm --filter @appeeky/app-store-connect-core run generate:types",
+    "generate:ops": "pnpm --filter @appeeky/app-store-connect-core run generate:ops",
     "appstore": "pnpm --filter @appeeky/app-store-connect-cli exec appstore",
     "appstore-mcp": "pnpm --filter @appeeky/app-store-connect-cli exec appstore-mcp",
-    "docs:ops": "node scripts/generate-ops-reference.mjs"
+    "docs:ops": "node scripts/generate-ops-reference.mjs",
+    "check:generated": "node scripts/generate-ops-reference.mjs --check && node scripts/check-api-ops-reference.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
