@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+AuthKey_*.p8
+.credentials/
+.turbo/
+*.log
+.vscode/
+.idea/
+
+# Downloaded by `pnpm generate:types`
+packages/core/.spec/
+
+# Copied into the CLI package on prepack
+packages/cli/skills/
+packages/cli/README.md

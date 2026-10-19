@@ -1,0 +1,66 @@
+{
+  "name": "@appeeky/app-store-connect-cli",
+  "version": "0.1.0",
+  "description": "appstore + appstore-mcp: App Store Connect CLI and MCP server",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "appstore": "./dist/bin.js",
+    "appstore-mcp": "./dist/mcp-bin.js"
+  },
+  "files": [
+    "dist/bin.js",
+    "dist/bin.js.map",
+    "dist/mcp-bin.js",
+    "dist/mcp-bin.js.map",
+    "skills",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/bin.js",
+  "types": "./dist/bin.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appeeky/app-store-connect-cli.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://asc.appeeky.com",
+  "bugs": {
+    "url": "https://github.com/appeeky/app-store-connect-cli/issues"
+  },
+  "keywords": [
+    "app-store-connect",
+    "app-store",
+    "testflight",
+    "ios",
+    "cli",
+    "mcp",
+    "appstore",
+    "appeeky"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ./scripts/bundle.mjs",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "node ./scripts/prepare-publish.mjs",
+    "postpack": "node ./scripts/postpack.mjs"
+  },
+  "dependencies": {
+    "@appeeky/app-store-connect-core": "workspace:*",
+    "@appeeky/app-store-connect-mcp": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "commander": "^13.1.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.4",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@appeeky/app-store-connect-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable App Store Connect API client (internal workspace package)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --dir src",
+    "generate:types": "node ./scripts/generate-types.mjs"
+  },
+  "dependencies": {
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "fflate": "^0.8.2",
+    "openapi-typescript": "^7.8.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "app-store-connect-cli",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local-first App Store Connect CLI, MCP and SDK",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r run typecheck",
+    "generate:types": "pnpm --filter @appeeky/app-store-connect-core run generate:types",
+    "appstore": "pnpm --filter @appeeky/app-store-connect-cli exec appstore",
+    "appstore-mcp": "pnpm --filter @appeeky/app-store-connect-cli exec appstore-mcp"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}
