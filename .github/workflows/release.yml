@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - name: Check tag matches package version
+        run: |
+          VERSION="$(node -p "require('./packages/cli/package.json').version")"
+          if [ "v${VERSION}" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match packages/cli version ${VERSION}"
+            exit 1
+          fi
+      - name: Publish packages
+        run: |
+          VERSION="$(node -p "require('./packages/cli/package.json').version")"
+          if npm view "@appeeky/app-store-connect-cli@${VERSION}" version >/dev/null 2>&1; then
+            echo "npm already has @appeeky/app-store-connect-cli@${VERSION}; skipping publish"
+          else
+            pnpm --filter @appeeky/app-store-connect-cli publish --access public --no-git-checks
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
