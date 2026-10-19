@@ -42,7 +42,9 @@
       "og:site_name": "App Store Connect CLI",
       "og:title": "App Store Connect CLI",
       "og:description": "CLI, MCP, and TypeScript SDK for the App Store Connect API.",
-      "twitter:card": "summary",
+      "og:image": "https://asc.appeeky.com/images/hero-appeeky.png",
+      "twitter:card": "summary_large_image",
+      "twitter:image": "https://asc.appeeky.com/images/hero-appeeky.png",
       "twitter:title": "App Store Connect CLI",
       "twitter:description": "CLI, MCP, and TypeScript SDK for the App Store Connect API."
     }

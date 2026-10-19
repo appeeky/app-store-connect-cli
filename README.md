@@ -4,6 +4,10 @@
 
 A scriptable **CLI + MCP + TypeScript SDK** for the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi).
 
+<p align="center">
+  <img src="./images/hero.jpg" alt="Appeeky — CLI, MCP, and TypeScript SDK for the App Store Connect API" width="100%" />
+</p>
+
 Ship iOS, macOS, tvOS and visionOS apps from your terminal, CI or AI agent: versions and metadata, App Review submissions, TestFlight, customer reviews, screenshots, in-app purchases, subscriptions, signing and reports.
 
 | Package | Binaries | Role |
