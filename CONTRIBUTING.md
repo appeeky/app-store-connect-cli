@@ -41,7 +41,9 @@ Unit tests use a scripted `fetch` and a throwaway P-256 key (`packages/core/src/
 
 ## Releasing
 
-Bump `packages/cli/package.json`, update `CHANGELOG.md`, and push a `v<version>` tag. The release workflow publishes `@appeeky/app-store-connect-cli` with `NPM_TOKEN`.
+Releases are automatic. Every push to `main` runs CI, then `scripts/release.mjs` reads the Conventional Commits since the last `v*` tag: `feat:` is a minor bump, `fix:` and `perf:` are a patch, `!` or `BREAKING CHANGE:` is a major bump (minor while at 0.x). It sets the version on every workspace package, adds a section to `CHANGELOG.md`, publishes `@appeeky/app-store-connect-cli` with `NPM_TOKEN`, tags `v<version>` and creates the GitHub release. `docs:`, `chore:`, `test:` and `refactor:` commits don't release.
+
+Preview a release with `node scripts/release.mjs --dry-run`.
 
 ## Docs
 
