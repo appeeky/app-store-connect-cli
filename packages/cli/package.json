@@ -1,6 +1,6 @@
 {
   "name": "@appeeky/app-store-connect-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "appstore + appstore-mcp: App Store Connect CLI and MCP server",
   "license": "MIT",
   "type": "module",

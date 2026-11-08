@@ -1,6 +1,6 @@
 {
   "name": "@appeeky/app-store-connect-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Reusable App Store Connect API client (internal workspace package)",
   "license": "MIT",

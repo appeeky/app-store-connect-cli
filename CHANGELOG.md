@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 (2026-11-08)
+
+### Features
+
+- Apple Search Ads keys on accounts and `appstore search-ads call` (#1) ([462b6d2](https://github.com/appeeky/app-store-connect-cli/commit/462b6d2670c5507fa3dbbddd82a47d07aed04b45))
+
 ## Unreleased
 
 - Apple Search Ads: an account can hold a Search Ads API key in an optional `searchAds` block (`clientId`, `teamId`, `keyId`, `privateKeyPath`, `orgId`). Existing config files stay valid.

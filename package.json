@@ -1,7 +1,7 @@
 {
   "name": "app-store-connect-cli",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local-first App Store Connect CLI, MCP and SDK",
   "license": "MIT",
   "type": "module",
