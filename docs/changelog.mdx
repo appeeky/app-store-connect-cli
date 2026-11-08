@@ -3,6 +3,12 @@ title: Changelog
 description: Release notes for the App Store Connect CLI, MCP and SDK.
 ---
 
+## Unreleased
+
+- Apple Search Ads key on an account (`accounts search-ads`, or `ASA_*` env vars)
+- `search-ads call <METHOD> <path> [jsonBody]` for any Campaign Management API v5 request, and `search-ads orgs`
+- Fix: `accounts add` kept `--key-id` and `--issuer-id` instead of losing them to the global flags
+
 ## 0.1.0
 
 - First release of `appstore`, `appstore-mcp`, the core SDK and the hosted server

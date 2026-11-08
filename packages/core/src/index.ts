@@ -98,11 +98,32 @@ export {
   removeAppFromConfig,
   upsertAccount,
   credentialsForAccount,
+  setSearchAds,
   type AscConfig,
   type ConfigAccount,
   type ConfigApp,
   type RegisteredApp,
 } from "./config.js";
+export {
+  SearchAdsClient,
+  SearchAdsError,
+  SEARCH_ADS_BASE_URL,
+  SEARCH_ADS_TOKEN_URL,
+  SEARCH_ADS_AUDIENCE,
+  searchAdsClientSecret,
+  searchAdsCredentialsFromEnv,
+  searchAdsCredentialsFromConfig,
+  parseSearchAdsPrivateKey,
+  normalizeSearchAdsPath,
+  isSearchAdsAclsPath,
+  isSearchAdsWrite,
+  type SearchAdsAccountConfig,
+  type SearchAdsCredentials,
+  type SearchAdsClientOptions,
+  type SearchAdsErrorEntry,
+  type SearchAdsMethod,
+  type SearchAdsOrg,
+} from "./searchads.js";
 export { ClientRegistry, type ClientRegistryOptions } from "./registry.js";
 export { parseReport, type ParsedReport, type SalesReportInput, type FinanceReportInput } from "./resources/reports.js";
 export { uploadParts, type MediaKind, type UploadResult } from "./resources/media.js";

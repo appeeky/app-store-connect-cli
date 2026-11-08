@@ -19,6 +19,7 @@ Ship iOS, macOS, tvOS and visionOS apps from your terminal, CI or AI agent: vers
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Multi-account](#multi-account)
+- [Apple Search Ads](#apple-search-ads)
 - [Common workflows](#common-workflows)
 - [Full API coverage](#full-api-coverage)
 - [MCP](#mcp)
@@ -105,6 +106,48 @@ appstore apps register 1234567890 --to studio --bundle-id com.studio.app --defau
 ```
 
 Details: [docs/authentication-accounts.mdx](./docs/authentication-accounts.mdx).
+
+## Apple Search Ads
+
+An account can also hold an Apple Search Ads API key. The private key stays in your config, next to the App Store Connect key.
+
+Create the API user first:
+
+1. In [Apple Search Ads](https://app.searchads.apple.com), invite a user with an API role (for example API Account Read Only) under Account Settings → User Management.
+2. Sign in as that user and open Account Settings → API.
+3. Make an EC key pair and upload the public key:
+
+   ```bash
+   openssl ecparam -genkey -name prime256v1 -noout -out searchads-private-key.pem
+   openssl ec -in searchads-private-key.pem -pubout -out searchads-public-key.pem
+   ```
+
+4. Apple shows a client id, team id and key id. Keep the private key file outside the repo.
+
+Attach the key to an account:
+
+```bash
+appstore accounts search-ads studio --client-id SEARCHADS.… --team-id SEARCHADS.… --key-id … --private-key-path ~/keys/searchads-private-key.pem
+appstore --account studio search-ads orgs        # organizations the key reaches
+appstore accounts search-ads studio --org-id 1234567   # pick one when there are several
+appstore accounts search-ads studio --remove
+```
+
+The command checks that the file is an EC private key. A public key is refused. `accounts list` shows which accounts have Search Ads.
+
+Send any Campaign Management API (v5) request:
+
+```bash
+appstore --account studio search-ads call GET '/api/v5/campaigns?limit=1000'
+appstore --account studio search-ads call POST /api/v5/reports/campaigns '{"startTime":"2026-10-01","endTime":"2026-10-31","granularity":"DAILY","timeZone":"UTC","selector":{"orderBy":[{"field":"campaignId","sortOrder":"ASCENDING"}],"pagination":{"offset":0,"limit":1000}}}'
+appstore --account studio search-ads call GET /api/v5/acls
+```
+
+The CLI signs in, adds `X-AP-Context: orgId=…` (not for `/api/v5/acls`) and prints Apple's JSON body. The org comes from `--org-id`, the account, `ASA_ORG_ID`, or the only org the key reaches. Reports and `…/find` queries are reads. Other `POST`, `PUT` and `DELETE` calls need `--confirm`.
+
+Without a config, set `ASA_CLIENT_ID`, `ASA_TEAM_ID` (defaults to the client id), `ASA_KEY_ID`, `ASA_PRIVATE_KEY` (PEM, `\n` escapes allowed) or `ASA_PRIVATE_KEY_PATH`, and `ASA_ORG_ID`. As with `ASC_*`, the env wins unless you pass `--account`.
+
+On an Apple error the command exits with code 1 and prints the message on stderr. With `--json` it also prints `{"error": {"code", "status", "message", "messageCode", "field", …}}` on stdout.
 
 ## Common workflows
 

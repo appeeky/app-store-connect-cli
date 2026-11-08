@@ -18,6 +18,8 @@ Keys come from App Store Connect → Users and Access → Integrations → App S
 
 `--account NAME` always uses that saved account.
 
+Apple Search Ads uses its own key: `ASA_CLIENT_ID`, `ASA_TEAM_ID`, `ASA_KEY_ID`, `ASA_PRIVATE_KEY_PATH` or `ASA_PRIVATE_KEY`, `ASA_ORG_ID`, or `appstore accounts search-ads NAME …` (same precedence).
+
 ## Individual keys
 
 No issuer id: omit `--issuer-id`. Tokens then use `sub: "user"`.

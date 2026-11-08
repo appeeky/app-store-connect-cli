@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ClientRegistry,
@@ -20,6 +20,14 @@ import {
   upsertAccount,
   addAppToConfig,
   removeAppFromConfig,
+  setSearchAds,
+  loadPrivateKey,
+  parseSearchAdsPrivateKey,
+  SearchAdsClient,
+  SearchAdsError,
+  isSearchAdsWrite,
+  normalizeSearchAdsPath,
+  type SearchAdsAccountConfig,
   ASC_SPEC_VERSION,
   type AppStoreConnectClient,
   type JsonApiDocument,
@@ -81,6 +89,32 @@ function resolveSkillsDir(): string {
     if (existsSync(join(dir, "appstore-cli", "SKILL.md"))) return dir;
   }
   throw new Error("Could not find skills/ directory. From the repo: npx skills add ./skills --skill '*' -g -y");
+}
+
+/**
+ * Validate Search Ads flags and the key file, and build the config block.
+ * The key is parsed (never printed) so a public key fails here, not on first use.
+ */
+function searchAdsBlock(
+  o: { clientId?: string; teamId?: string; keyId?: string; privateKeyPath?: string; orgId?: string },
+  prefix: string,
+): SearchAdsAccountConfig {
+  const missing = [
+    !o.clientId && `${prefix}client-id`,
+    !o.keyId && `${prefix}key-id`,
+    !o.privateKeyPath && `${prefix}private-key-path`,
+  ].filter(Boolean);
+  if (missing.length) throw new Error(`Apple Search Ads needs ${missing.join(", ")}`);
+  if (o.orgId && !/^\d+$/.test(o.orgId)) throw new Error(`${prefix}org-id must be the numeric org id, got ${o.orgId}`);
+  const keyPath = resolve(o.privateKeyPath!);
+  parseSearchAdsPrivateKey(loadPrivateKey(keyPath), keyPath);
+  return {
+    clientId: o.clientId!,
+    teamId: o.teamId || o.clientId!,
+    keyId: o.keyId!,
+    privateKeyPath: keyPath,
+    ...(o.orgId ? { orgId: o.orgId } : {}),
+  };
 }
 
 export function buildProgram(): Command {
@@ -221,6 +255,7 @@ export function buildProgram(): Command {
             defaultAppId: r.defaultAppId,
             vendorNumber: r.vendorNumber,
             privateKeyPath: r.privateKeyPath,
+            searchAds: r.searchAds,
           })),
         );
       }
@@ -230,35 +265,90 @@ export function buildProgram(): Command {
     .command("add")
     .description("Save a named account (API key)")
     .argument("<id>", "Account id, e.g. my-team")
-    .requiredOption("--key-id <id>", "API key id")
+    .option("--key-id <id>", "API key id (required)")
     .requiredOption("--private-key-path <path>", "Path to AuthKey_XXXX.p8")
     .option("--issuer-id <id>", "Issuer id (omit for Individual keys)")
     .option("--vendor-number <n>", "Vendor number for sales and finance reports")
     .option("--default-app <appId>", "Default app id for this account")
     .option("--default", "Make this the default account", false)
+    .option("--search-ads-client-id <id>", "Apple Search Ads API client id (optional, see `accounts search-ads`)")
+    .option("--search-ads-team-id <id>", "Apple Search Ads team id (defaults to the client id)")
+    .option("--search-ads-key-id <id>", "Apple Search Ads key id")
+    .option("--search-ads-private-key-path <path>", "Apple Search Ads EC private key PEM")
+    .option("--search-ads-org-id <id>", "Apple Search Ads org id")
     .action(
       (
         id: string,
         o: {
-          keyId: string;
+          keyId?: string;
           privateKeyPath: string;
           issuerId?: string;
           vendorNumber?: string;
           defaultApp?: string;
           default?: boolean;
+          searchAdsClientId?: string;
+          searchAdsTeamId?: string;
+          searchAdsKeyId?: string;
+          searchAdsPrivateKeyPath?: string;
+          searchAdsOrgId?: string;
         },
       ) => {
+        // --key-id and --issuer-id are also global flags, so commander may hand them to the program.
+        const keyId = o.keyId ?? g().keyId;
+        const issuerId = o.issuerId ?? g().issuerId;
+        if (!keyId) throw new Error("required option '--key-id <id>' not specified");
+        const wantsSearchAds = [o.searchAdsClientId, o.searchAdsTeamId, o.searchAdsKeyId, o.searchAdsPrivateKeyPath, o.searchAdsOrgId].some(Boolean);
+        const searchAds = wantsSearchAds
+          ? searchAdsBlock({
+              clientId: o.searchAdsClientId,
+              teamId: o.searchAdsTeamId,
+              keyId: o.searchAdsKeyId,
+              privateKeyPath: o.searchAdsPrivateKeyPath,
+              orgId: o.searchAdsOrgId,
+            }, "--search-ads-")
+          : undefined;
         const path = defaultConfigPath();
         let config = upsertAccount(loadConfig(path), id, {
-          keyId: o.keyId,
-          issuerId: o.issuerId,
+          keyId,
+          issuerId,
           privateKeyPath: o.privateKeyPath,
           vendorNumber: o.vendorNumber,
           defaultAppId: o.defaultApp,
+          searchAds,
         });
         if (o.default || !config.defaultAccount) config = { ...config, defaultAccount: id };
         saveConfig(config, path);
-        printJson({ ok: true, account: id, configPath: path });
+        printJson({ ok: true, account: id, configPath: path, ...(searchAds ? { searchAds: true } : {}) });
+      },
+    );
+
+  accounts
+    .command("search-ads")
+    .description("Attach an Apple Search Ads API key to an existing account (or drop it with --remove)")
+    .argument("<id>", "Account id")
+    .option("--client-id <id>", "Client id from Search Ads → Account Settings → API (SEARCHADS.…)")
+    .option("--team-id <id>", "Team id (defaults to the client id)")
+    .option("--key-id <id>", "Key id")
+    .option("--private-key-path <path>", "EC private key PEM you made for the API user")
+    .option("--org-id <id>", "Organization id; needed when the key reaches more than one org")
+    .option("--remove", "Remove the Search Ads key from the account", false)
+    .action(
+      (
+        id: string,
+        o: { clientId?: string; teamId?: string; keyId?: string; privateKeyPath?: string; orgId?: string; remove?: boolean },
+      ) => {
+        const path = defaultConfigPath();
+        const config = loadConfig(path);
+        if (!config.accounts?.[id]) throw new Error(`Unknown account: ${id}. Run: appstore accounts add ${id} …`);
+        if (o.remove) {
+          saveConfig(setSearchAds(config, id, undefined), path);
+          printJson({ ok: true, account: id, searchAds: false, configPath: path });
+          return;
+        }
+        // --key-id is also a global flag, so commander may hand it to the program.
+        const searchAds = searchAdsBlock({ ...o, keyId: o.keyId ?? g().keyId }, "--");
+        saveConfig(setSearchAds(config, id, searchAds), path);
+        printJson({ ok: true, account: id, searchAds: true, orgId: searchAds.orgId, configPath: path });
       },
     );
 
@@ -373,6 +463,78 @@ export function buildProgram(): Command {
       const { client } = await clientFor(args.appId as string | undefined);
       if (typeof args.appId === "string" && !/^\d+$/.test(args.appId)) args.appId = await client.apps.resolveAppId(args.appId);
       printJson(await invokeOp(client, name, args));
+    });
+
+  // ── Apple Search Ads ────────────────────────────────────────────
+  const searchAds = program
+    .command("search-ads")
+    .description("Apple Search Ads API (v5) with the account's Search Ads key: raw calls and org lookup");
+
+  function searchAdsClientFor(orgId?: string): SearchAdsClient {
+    const opts = g();
+    const { credentials } = registryFrom(opts).searchAdsCredentials(opts.account);
+    return new SearchAdsClient(orgId ? { ...credentials, orgId } : credentials);
+  }
+
+  /** Print Search Ads errors as {"error": {...}} on stdout with --json, then fail (message on stderr). */
+  async function withSearchAdsErrors(run: () => Promise<void>): Promise<void> {
+    try {
+      await run();
+    } catch (error) {
+      if (g().json) {
+        const payload =
+          error instanceof SearchAdsError
+            ? error.toJSON()
+            : {
+                code: (error as { code?: string }).code ?? "ERROR",
+                message: error instanceof Error ? error.message : String(error),
+              };
+        printJson({ error: payload });
+      }
+      throw error;
+    }
+  }
+
+  searchAds
+    .command("call")
+    .description("Send one request, e.g. appstore search-ads call GET '/api/v5/campaigns?limit=1000'")
+    .argument("<method>", "GET, POST, PUT or DELETE")
+    .argument("<path>", "Path under /api/v5, with the query string")
+    .argument("[jsonBody]", "JSON request body: inline JSON or @file.json")
+    .option("--org-id <id>", "Organization id for X-AP-Context (overrides the account and ASA_ORG_ID)")
+    .action(async (method: string, path: string, jsonBody: string | undefined, o: { orgId?: string }) => {
+      await withSearchAdsErrors(async () => {
+        const opts = g();
+        const m = method.toUpperCase();
+        if (!["GET", "POST", "PUT", "PATCH", "DELETE"].includes(m)) throw new Error(`Unknown method ${method}. Use GET, POST, PUT, PATCH or DELETE.`);
+        const p = normalizeSearchAdsPath(path);
+        const body = jsonBody !== undefined ? readJsonArg(jsonBody, "jsonBody") : undefined;
+        if (isSearchAdsWrite(m, p)) {
+          if (opts.readOnly) throw new Error(`Cannot perform write operation "${m} ${p.split("?")[0]}" in read-only mode`);
+          requireConfirm(opts, `${m} ${p.split("?")[0]}`);
+        }
+        printJson(await searchAdsClientFor(o.orgId).request(m, p, body));
+      });
+    });
+
+  searchAds
+    .command("orgs")
+    .description("List the organizations (ACLs) the Search Ads key reaches")
+    .action(async () => {
+      await withSearchAdsErrors(async () => {
+        const orgs = await searchAdsClientFor().orgs();
+        if (g().json) printJson(orgs);
+        else
+          printTable(
+            orgs.map((org) => ({
+              orgId: org.orgId,
+              orgName: org.orgName,
+              currency: org.currency,
+              paymentModel: org.paymentModel,
+              roles: org.roleNames?.join(", "),
+            })),
+          );
+      });
     });
 
   // ── Full API (generated operations) ──────────────────────────

@@ -1,0 +1,88 @@
+---
+title: Apple Search Ads
+description: Keep a Search Ads API key next to the App Store Connect key and call the Campaign Management API.
+---
+
+```bash
+appstore accounts search-ads <account> --client-id <id> --key-id <id> --private-key-path <pem> [--team-id <id>] [--org-id <id>]
+appstore accounts search-ads <account> --remove
+appstore search-ads orgs
+appstore search-ads call <METHOD> <path> [jsonBody] [--org-id <id>]
+```
+
+## Create the API user
+
+1. In Apple Search Ads, invite a user with an API role (for example API Account Read Only) under Account Settings → User Management.
+2. Sign in as that user and open Account Settings → API.
+3. Make an EC key pair and upload the public key:
+
+   ```bash
+   openssl ecparam -genkey -name prime256v1 -noout -out searchads-private-key.pem
+   openssl ec -in searchads-private-key.pem -pubout -out searchads-public-key.pem
+   ```
+
+4. Apple shows a client id, team id and key id.
+
+## Save it on an account
+
+```bash
+appstore accounts search-ads studio --client-id SEARCHADS.… --team-id SEARCHADS.… --key-id … --private-key-path ~/keys/searchads-private-key.pem
+appstore --account studio search-ads orgs
+appstore accounts search-ads studio --org-id 1234567
+```
+
+The file must be an EC private key. A public key is refused. The config keeps the path, not the key:
+
+```json
+"searchAds": {
+  "clientId": "SEARCHADS.…",
+  "teamId": "SEARCHADS.…",
+  "keyId": "…",
+  "privateKeyPath": "/Users/you/keys/searchads-private-key.pem",
+  "orgId": "1234567"
+}
+```
+
+## Environment
+
+| Variable | Meaning |
+|----------|---------|
+| `ASA_CLIENT_ID` | Client id |
+| `ASA_TEAM_ID` | Team id (defaults to the client id) |
+| `ASA_KEY_ID` | Key id |
+| `ASA_PRIVATE_KEY` | PEM contents (`\n` escapes allowed) |
+| `ASA_PRIVATE_KEY_PATH` | Path to the PEM |
+| `ASA_ORG_ID` | Organization id |
+
+The env wins over the default account. `--account` always uses that account's key. `ASA_ORG_ID` fills in the org when the account has none.
+
+## Calls
+
+```bash
+appstore --account studio search-ads call GET '/api/v5/campaigns?limit=1000'
+appstore --account studio search-ads call GET /api/v5/campaigns/123/adgroups/456/targetingkeywords
+appstore --account studio search-ads call POST /api/v5/reports/campaigns @report.json
+```
+
+- The CLI gets an access token and adds `X-AP-Context: orgId=…`. `/api/v5/acls` is sent without it.
+- The org comes from `--org-id`, then the account (or `ASA_ORG_ID`), then the only org the key reaches. With several orgs and none set, the command fails and lists them.
+- Reports and `…/find` queries are reads. Other `POST`, `PUT` and `DELETE` calls need `--confirm`; `--read-only` blocks them.
+- On success stdout is Apple's JSON body, for example `{"data": [...], "pagination": {...}, "error": null}`.
+- On failure the exit code is 1 and stderr has one line, for example `Apple Search Ads 400: endTime is invalid (field: endTime) on POST /api/v5/reports/campaigns`. With `--json`, stdout also gets:
+
+```json
+{
+  "error": {
+    "code": "SEARCH_ADS_ERROR",
+    "status": 400,
+    "message": "Apple Search Ads 400: endTime is invalid (field: endTime) on POST /api/v5/reports/campaigns",
+    "messageCode": "INVALID_INPUT",
+    "field": "endTime",
+    "method": "POST",
+    "path": "/api/v5/reports/campaigns",
+    "errors": [{ "messageCode": "INVALID_INPUT", "message": "endTime is invalid", "field": "endTime" }]
+  }
+}
+```
+
+Errors before the request (no key, bad path) use the same shape with `code` `AUTH_ERROR` or `VALIDATION_ERROR` and no `status`.

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Apple Search Ads: an account can hold a Search Ads API key in an optional `searchAds` block (`clientId`, `teamId`, `keyId`, `privateKeyPath`, `orgId`). Existing config files stay valid.
+- `appstore accounts search-ads <account>` attaches the key (it must be an EC private key; public keys are refused), `--remove` drops it. `accounts add` takes the same values as `--search-ads-*` flags. `accounts list` shows which accounts have Search Ads.
+- `appstore search-ads call <METHOD> <path> [jsonBody]` sends any Campaign Management API v5 request with `X-AP-Context: orgId=…` and prints the JSON body. With `--json`, failures also print `{"error": {...}}`. `appstore search-ads orgs` lists the orgs the key reaches.
+- `ASA_CLIENT_ID`, `ASA_TEAM_ID`, `ASA_KEY_ID`, `ASA_PRIVATE_KEY` / `ASA_PRIVATE_KEY_PATH`, `ASA_ORG_ID` work like the `ASC_*` variables.
+- SDK: `SearchAdsClient`, `searchAdsClientSecret`, `ClientRegistry.searchAdsCredentials()`.
+- Fix: `appstore accounts add --key-id … --issuer-id …` lost both values to the global flags of the same name, so the command failed and team keys could be saved without an issuer id.
+
 ## 0.1.0
 
 - Initial release: `appstore` CLI, `appstore-mcp` stdio server, `@appeeky/app-store-connect-core` SDK and the hosted server
