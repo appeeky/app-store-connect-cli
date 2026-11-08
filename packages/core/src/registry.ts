@@ -13,6 +13,11 @@ import {
   type RegisteredApp,
 } from "./config.js";
 import { AuthError, ValidationError } from "./errors.js";
+import {
+  searchAdsCredentialsFromConfig,
+  searchAdsCredentialsFromEnv,
+  type SearchAdsCredentials,
+} from "./searchads.js";
 
 export interface ClientRegistryOptions {
   configPath?: string;
@@ -41,6 +46,7 @@ export class ClientRegistry {
   private readonly preferredAccount?: string;
   private readonly clientOptions: ClientRegistryOptions["clientOptions"];
   private readonly envVendor?: string;
+  private readonly env: NodeJS.ProcessEnv;
   private readonly cache = new Map<string, AppStoreConnectClient>();
 
   private constructor(config: AscConfig, configPath: string, options: ClientRegistryOptions) {
@@ -50,6 +56,7 @@ export class ClientRegistry {
     this.preferredAccount = options.account;
     this.clientOptions = options.clientOptions ?? {};
     const env = options.env ?? process.env;
+    this.env = env;
     this.envVendor = env.ASC_VENDOR_NUMBER;
     // Flags or ASC_* env win over the config file (single-key mode). An
     // explicit --account still selects a config account.
@@ -78,6 +85,9 @@ export class ClientRegistry {
     appCount: number;
     isDefault: boolean;
     privateKeyPath?: string;
+    /** Whether the account has an Apple Search Ads key (no secrets). */
+    searchAds: boolean;
+    searchAdsOrgId?: string;
   }> {
     const defaultId = resolveAccountId(this.config, this.preferredAccount);
     return listAccountIds(this.config).map((id) => {
@@ -92,6 +102,8 @@ export class ClientRegistry {
         appCount: account.apps?.length ?? (account.defaultAppId ? 1 : 0),
         isDefault: id === defaultId,
         privateKeyPath: account.privateKeyPath,
+        searchAds: Boolean(account.searchAds),
+        searchAdsOrgId: account.searchAds?.orgId,
       };
     });
   }
@@ -155,6 +167,38 @@ export class ClientRegistry {
     if (this.explicit && !args.account) return { client: this.getClient() };
     const accountId = this.resolveAccountForArgs(args);
     return { client: this.getClient(accountId), accountId };
+  }
+
+  /**
+   * Apple Search Ads key, with the same precedence as the App Store Connect
+   * key: a named account (`--account`) uses its `searchAds` block; otherwise
+   * ASA_* env vars win; otherwise the default account's `searchAds` block.
+   * ASA_ORG_ID fills in the org when the account has none.
+   */
+  searchAdsCredentials(accountId?: string): { credentials: SearchAdsCredentials; accountId?: string } {
+    const named = accountId ?? this.preferredAccount;
+    if (!named) {
+      const fromEnv = searchAdsCredentialsFromEnv(this.env);
+      if (fromEnv) return { credentials: fromEnv };
+    }
+    const resolved = resolveAccountId(this.config, named);
+    if (!resolved) {
+      throw new AuthError(
+        listAccountIds(this.config).length > 1
+          ? `Several accounts in ${this.configPath}; pass --account or set a default with \`appstore accounts use <id>\`.`
+          : "No Apple Search Ads key found. Set ASA_CLIENT_ID/ASA_TEAM_ID/ASA_KEY_ID/ASA_PRIVATE_KEY_PATH, or run `appstore accounts search-ads <account> …`.",
+      );
+    }
+    const block = getAccount(this.config, resolved).searchAds;
+    if (!block) {
+      throw new AuthError(
+        `Account "${resolved}" has no Apple Search Ads key. Add one: appstore accounts search-ads ${resolved} --client-id … --team-id … --key-id … --private-key-path …`,
+      );
+    }
+    const credentials = searchAdsCredentialsFromConfig(resolved, block);
+    const envOrg = this.env.ASA_ORG_ID?.trim();
+    if (!credentials.orgId && envOrg) credentials.orgId = envOrg;
+    return { credentials, accountId: resolved };
   }
 
   defaultAppId(accountId?: string): string | undefined {

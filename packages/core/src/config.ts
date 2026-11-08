@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { AuthError, ValidationError } from "./errors.js";
 import { loadPrivateKey, type ApiKeyCredentials } from "./auth.js";
+import type { SearchAdsAccountConfig } from "./searchads.js";
 
 export interface ConfigApp {
   /** Apple app id (digits). */
@@ -25,6 +26,8 @@ export interface ConfigAccount {
   defaultAppId?: string;
   /** Optional shortlist of apps (App Store Connect can list apps itself). */
   apps?: ConfigApp[];
+  /** Apple Search Ads API user for the same team (optional). */
+  searchAds?: SearchAdsAccountConfig;
 }
 
 export interface AscConfig {
@@ -170,4 +173,18 @@ export function upsertAccount(config: AscConfig, accountId: string, patch: Confi
   }
   accounts[accountId] = merged as ConfigAccount;
   return { ...config, accounts, defaultAccount: config.defaultAccount ?? accountId };
+}
+
+/** Attach (or with `undefined`, drop) the Search Ads key of an existing account. */
+export function setSearchAds(
+  config: AscConfig,
+  accountId: string,
+  searchAds: SearchAdsAccountConfig | undefined,
+): AscConfig {
+  const accounts = { ...(config.accounts ?? {}) };
+  const account = accounts[accountId];
+  if (!account) throw new ValidationError(`Unknown account "${accountId}"`);
+  const { searchAds: _old, ...rest } = account;
+  accounts[accountId] = searchAds ? { ...rest, searchAds } : rest;
+  return { ...config, accounts };
 }

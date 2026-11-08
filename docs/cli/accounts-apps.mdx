@@ -9,7 +9,11 @@ appstore accounts list
 appstore accounts use <id>
 appstore accounts remove <id>
 appstore accounts check          # lists one app per account to prove each key works
+appstore accounts search-ads <id> --client-id <id> --key-id <id> --private-key-path <pem> [--team-id <id>] [--org-id <id>]
+appstore accounts search-ads <id> --remove
 ```
+
+`accounts add` also takes `--search-ads-client-id`, `--search-ads-team-id`, `--search-ads-key-id`, `--search-ads-private-key-path` and `--search-ads-org-id`. See [Apple Search Ads](/cli/search-ads).
 
 ## Apps from Apple
 

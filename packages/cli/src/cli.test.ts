@@ -1,4 +1,5 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { generateKeyPairSync } from "node:crypto";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -50,6 +51,7 @@ describe("appstore CLI", () => {
       "analytics",
       "ops",
       "api",
+      "search-ads",
     ]) {
       expect(names, name).toContain(name);
     }
@@ -114,6 +116,129 @@ describe("appstore CLI", () => {
       expect(readJsonArg(`@${file}`, "--body")).toEqual({ data: { type: "betaGroups" } });
       expect(readJsonArg('{"a":1}', "--body")).toEqual({ a: 1 });
       expect(() => readJsonArg("{nope", "--body")).toThrow(/--body must be JSON/);
+    });
+  });
+
+  describe("search-ads", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    });
+
+    function home() {
+      const dir = mkdtempSync(join(tmpdir(), "appstore-asa-"));
+      vi.stubEnv("HOME", dir);
+      for (const name of ["ASA_CLIENT_ID", "ASA_TEAM_ID", "ASA_KEY_ID", "ASA_PRIVATE_KEY", "ASA_PRIVATE_KEY_PATH", "ASA_ORG_ID"]) vi.stubEnv(name, "");
+      const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+      const keyPath = join(dir, "asa.pem");
+      const pubPath = join(dir, "asa-public.pem");
+      const ascPath = join(dir, "AuthKey.p8");
+      writeFileSync(keyPath, privateKey.export({ type: "pkcs8", format: "pem" }));
+      writeFileSync(ascPath, privateKey.export({ type: "pkcs8", format: "pem" }));
+      writeFileSync(pubPath, publicKey.export({ type: "spki", format: "pem" }));
+      return { dir, keyPath, pubPath, ascPath, configPath: join(dir, ".config", "appstore", "config.json") };
+    }
+
+    function capture() {
+      const lines: string[] = [];
+      vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+        lines.push(args.map(String).join(" "));
+      });
+      return lines;
+    }
+
+    function fakeFetch(api: (url: string, init: RequestInit) => Response) {
+      const calls: Array<{ url: string; headers: Headers; method: string; body?: string }> = [];
+      vi.stubGlobal("fetch", async (input: string, init: RequestInit = {}) => {
+        const url = String(input);
+        calls.push({ url, headers: new Headers(init.headers), method: init.method ?? "GET", body: init.body as string | undefined });
+        if (url.startsWith("https://appleid.apple.com/")) return Response.json({ access_token: "tok" });
+        return api(url, init);
+      });
+      return calls;
+    }
+
+    it("attaches a key to an account, refuses a public key, and removes it", async () => {
+      const h = home();
+      capture();
+      await run(["accounts", "add", "studio", "--key-id", "K1", "--issuer-id", "ISS", "--private-key-path", h.ascPath]);
+      await expect(
+        run(["accounts", "search-ads", "studio", "--client-id", "SEARCHADS.c", "--key-id", "AK", "--private-key-path", h.pubPath]),
+      ).rejects.toThrow(/is a public key/);
+      await run(["accounts", "search-ads", "studio", "--client-id", "SEARCHADS.c", "--team-id", "SEARCHADS.t", "--key-id", "AK", "--private-key-path", h.keyPath, "--org-id", "77"]);
+      const config = JSON.parse(readFileSync(h.configPath, "utf8"));
+      expect(config.accounts.studio).toMatchObject({
+        keyId: "K1",
+        issuerId: "ISS",
+        searchAds: { clientId: "SEARCHADS.c", teamId: "SEARCHADS.t", keyId: "AK", privateKeyPath: h.keyPath, orgId: "77" },
+      });
+      const lines = capture();
+      await run(["--json", "accounts", "list"]);
+      const listed = JSON.parse(lines.join("\n"));
+      expect(listed.accounts[0]).toMatchObject({ id: "studio", searchAds: true, searchAdsOrgId: "77" });
+      expect(lines.join("\n")).not.toContain("PRIVATE KEY");
+      await run(["accounts", "search-ads", "studio", "--remove"]);
+      expect(JSON.parse(readFileSync(h.configPath, "utf8")).accounts.studio.searchAds).toBeUndefined();
+    });
+
+    it("calls Search Ads with the account key and prints the body", async () => {
+      const h = home();
+      capture();
+      await run(["accounts", "add", "studio", "--key-id", "K1", "--private-key-path", h.ascPath,
+        "--search-ads-client-id", "SEARCHADS.c", "--search-ads-key-id", "AK", "--search-ads-private-key-path", h.keyPath]);
+      const calls = fakeFetch((url) =>
+        url.endsWith("/acls") ? Response.json({ data: [{ orgId: 9, orgName: "Studio" }] }) : Response.json({ data: [{ id: 1 }], pagination: { totalResults: 1 } }),
+      );
+      const lines = capture();
+      await run(["--json", "--account", "studio", "search-ads", "call", "GET", "/api/v5/campaigns?limit=1000"]);
+      expect(JSON.parse(lines.join("\n"))).toEqual({ data: [{ id: 1 }], pagination: { totalResults: 1 } });
+      const acls = calls.find((c) => c.url.endsWith("/api/v5/acls"))!;
+      expect(acls.headers.get("x-ap-context")).toBeNull();
+      const campaigns = calls.find((c) => c.url === "https://api.searchads.apple.com/api/v5/campaigns?limit=1000")!;
+      expect(campaigns.headers.get("x-ap-context")).toBe("orgId=9");
+      expect(campaigns.headers.get("authorization")).toBe("Bearer tok");
+
+      lines.length = 0;
+      await run(["--json", "--account", "studio", "search-ads", "call", "POST", "/api/v5/reports/campaigns", '{"startTime":"2026-01-01"}', "--org-id", "5"]);
+      const report = calls.at(-1)!;
+      expect(report.method).toBe("POST");
+      expect(report.headers.get("x-ap-context")).toBe("orgId=5");
+      expect(JSON.parse(report.body!)).toEqual({ startTime: "2026-01-01" });
+
+      await expect(run(["--account", "studio", "search-ads", "call", "PUT", "/api/v5/campaigns/1", "{}"])).rejects.toThrow(/without --confirm/);
+    });
+
+    it("prints Apple's error as JSON with --json and fails", async () => {
+      const h = home();
+      capture();
+      await run(["accounts", "add", "studio", "--key-id", "K1", "--private-key-path", h.ascPath]);
+      const lines = capture();
+      await expect(run(["--json", "--account", "studio", "search-ads", "call", "GET", "/api/v5/campaigns"])).rejects.toThrow(
+        'Account "studio" has no Apple Search Ads key. Add one: appstore accounts search-ads studio',
+      );
+      expect(JSON.parse(lines.join("\n"))).toMatchObject({ error: { code: "AUTH_ERROR" } });
+
+      await run(["accounts", "search-ads", "studio", "--client-id", "SEARCHADS.c", "--key-id", "AK", "--private-key-path", h.keyPath, "--org-id", "9"]);
+      fakeFetch(() =>
+        Response.json({ data: null, error: { errors: [{ messageCode: "INVALID_INPUT", message: "endTime is invalid", field: "endTime" }] } }, { status: 400 }),
+      );
+      lines.length = 0;
+      await expect(run(["--json", "--account", "studio", "search-ads", "call", "POST", "/api/v5/reports/campaigns", "{}"])).rejects.toThrow(
+        "Apple Search Ads 400: endTime is invalid (field: endTime) on POST /api/v5/reports/campaigns",
+      );
+      expect(JSON.parse(lines.join("\n"))).toEqual({
+        error: {
+          code: "SEARCH_ADS_ERROR",
+          status: 400,
+          message: "Apple Search Ads 400: endTime is invalid (field: endTime) on POST /api/v5/reports/campaigns",
+          messageCode: "INVALID_INPUT",
+          field: "endTime",
+          method: "POST",
+          path: "/api/v5/reports/campaigns",
+          errors: [{ messageCode: "INVALID_INPUT", message: "endTime is invalid", field: "endTime" }],
+        },
+      });
     });
   });
 });

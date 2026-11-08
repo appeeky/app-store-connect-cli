@@ -97,6 +97,7 @@
           "cli/monetization",
           "cli/users-signing",
           "cli/reports",
+          "cli/search-ads",
           "cli/call-ops"
         ]
       },

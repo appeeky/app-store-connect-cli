@@ -45,6 +45,16 @@ appstore api call appstore_api_apps_app_clips_get_to_many_related --param id=123
 appstore api GET /v1/apps/1234567890/appClips
 ```
 
+## Apple Search Ads
+
+```bash
+appstore --account studio search-ads orgs
+appstore --account studio search-ads call GET '/api/v5/campaigns?limit=1000'
+appstore --account studio search-ads call POST /api/v5/reports/campaigns @report.json
+```
+
+Setup: `appstore accounts search-ads` (see `appstore-accounts`).
+
 ## Specialized skills
 
 | Task | Skill |
